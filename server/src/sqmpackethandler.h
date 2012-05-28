@@ -33,15 +33,9 @@ struct DataPacket
     PACKETLENGTHTYPE intPacktLength;
 };
 
-
 class SQMPacketHandler : public QObject
 {
     Q_OBJECT
-    public:
-        // con and decon
-        SQMPacketHandler(QObject *parent = 0);
-        ~SQMPacketHandler();
-
     signals:
         void newPacketReceived(DataPacket *packet);
 
@@ -50,7 +44,21 @@ class SQMPacketHandler : public QObject
         void disconnectedDevice(QIODevice *device);
         void dataHandler();
 
+    public:
+        // singelton static functions
+        static void create(QObject *object = 0);
+        static SQMPacketHandler* getInstance();
+
+    protected:
+        // protected con and decon so that no one (except the static create method) is able to construct an object!
+        SQMPacketHandler(QObject *parent = 0);
+        ~SQMPacketHandler();
+
     private:
+        // singelton static memeber
+        static SQMPacketHandler *sqmPacketHandler;
+
+        // dynamic members
         QMap<QIODevice*, DataPacket*> mapPacketsInProgress;
         QList<QIODevice*> lstPeers;
         QDataStream *dataStreamTmp;

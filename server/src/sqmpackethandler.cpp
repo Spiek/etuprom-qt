@@ -38,7 +38,7 @@ void SQMPacketHandler::newDevice(QIODevice* device)
 }
 
 /*
- * newDevice - remove device from packet parsing
+ * disconnectedDevice - remove device from packet parsing
  */
 void SQMPacketHandler::disconnectedDevice(QIODevice *device)
 {
@@ -58,8 +58,10 @@ void SQMPacketHandler::dataHandler()
 
     /// <Aquire Data Packet>
 
-    // get a pointer to a Packet by searching in map for an existing Datapacket, or create a new one
+    // contains later a ready constructed DataPacket
     DataPacket *packet = 0;
+
+    // create new data packet if data packet doesn't exist
     if(!this->mapPacketsInProgress.contains(ioPacketDevice)) {
         DataPacket *packetNew = new DataPacket;
         packet = packetNew;
@@ -113,10 +115,33 @@ void SQMPacketHandler::dataHandler()
     // and send packet as signal out in the world ("the world" has the task to delete it!)
     emit this->newPacketReceived(packet);
 
-    /// </Read Content> <-- Header content complete!
+    /// </Read Content> <-- Content read complete!
 
     // if there is still data on the socket call myself recrusivly again
     if(intAvailableDataLength > packet->intPacktLength) {
         return this->dataHandler();
     }
+}
+
+
+//
+// SINGELTON section
+//
+
+// static variable declaration
+SQMPacketHandler* SQMPacketHandler::sqmPacketHandler = 0;
+
+// SINGELTON Constructor
+void SQMPacketHandler::create(QObject *object)
+{
+    // only create instance if we haven't allready one
+    if(!SQMPacketHandler::sqmPacketHandler) {
+        SQMPacketHandler::sqmPacketHandler = new SQMPacketHandler(object);
+    }
+}
+
+// SINGELTON instance getter method
+SQMPacketHandler* SQMPacketHandler::getInstance()
+{
+    return SQMPacketHandler::sqmPacketHandler;
 }

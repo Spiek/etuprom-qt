@@ -15,12 +15,16 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    // initialize peer and packet handler
+    // initialize peer handler, which handled the peers
     SQMPeerHandler peerHandler(1234, QHostAddress::Any, &a);
     peerHandler.listen();
 
-    SQMPacketHandler packetHandler(&a);
-    a.connect(&peerHandler, SIGNAL(newDevice(QIODevice*)), &packetHandler, SLOT(newDevice(QIODevice*)));
+    // initialize packet handler, which handled the packet parsing
+    SQMPacketHandler::create(&a);
+    SQMPacketHandler* packetHandler = SQMPacketHandler::getInstance();
+    a.connect(&peerHandler, SIGNAL(newDevice(QIODevice*)), packetHandler, SLOT(newDevice(QIODevice*)));
+    a.connect(&peerHandler, SIGNAL(disconnectedDevice(QIODevice*)), packetHandler, SLOT(disconnectedDevice(QIODevice*)));
 
+    // start eventloop
     return a.exec();
 }
