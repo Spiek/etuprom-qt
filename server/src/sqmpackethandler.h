@@ -49,6 +49,9 @@ class SQMPacketHandler : public QObject
         static void create(QObject *object = 0);
         static SQMPacketHandler* getInstance();
 
+        // static helper functions
+        static void sendDataPacket(DataPacket* dpSrc, QByteArray *baDatatoSend);
+
     protected:
         // protected con and decon so that no one (except the static create method) is able to construct an object!
         SQMPacketHandler(QObject *parent = 0);

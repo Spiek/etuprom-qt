@@ -123,6 +123,22 @@ void SQMPacketHandler::dataHandler()
     }
 }
 
+//
+// Static Helper section
+//
+void SQMPacketHandler::sendDataPacket(DataPacket *dpSrc, QByteArray *baDatatoSend)
+{
+    // extract src device from src package
+    QIODevice *device = dpSrc->ioPacketDevice;
+
+    // send the content length
+    QDataStream streamContentLength(device);
+    streamContentLength << (PACKETLENGTHTYPE)baDatatoSend->length();
+
+    // send the data
+    device->write(*baDatatoSend);
+}
+
 
 //
 // SINGELTON section
