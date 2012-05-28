@@ -17,8 +17,10 @@ TEMPLATE = app
 
 SOURCES += server/src/main.cpp \
     server/src/sqmpeerhandler.cpp \
-    server/src/sqmpackethandler.cpp
+    collective/src/sqmpackethandler.cpp
 
 HEADERS += \
     server/src/sqmpeerhandler.h \
-    server/src/sqmpackethandler.h
+    collective/src/sqmpackethandler.h
+
+INCLUDEPATH += "include/"

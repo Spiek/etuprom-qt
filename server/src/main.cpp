@@ -8,8 +8,8 @@
 #include <QtCore/QCoreApplication>
 
 // own libs
-#include "sqmpeerhandler.h"
-#include "sqmpackethandler.h"
+#include "SQMPeerHandler"
+#include "SQMPacketHandler"
 
 int main(int argc, char *argv[])
 {
