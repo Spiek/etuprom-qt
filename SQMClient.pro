@@ -4,15 +4,19 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui network
 
 TARGET = SQMClient
 TEMPLATE = app
 
 
 SOURCES +=  client/src/main.cpp\
-	    client/src/mainwindow.cpp
+		client/src/mainwindow.cpp \
+		collective/src/sqmpackethandler.cpp
 
-HEADERS  += client/src/mainwindow.h
+HEADERS  += client/src/mainwindow.h  \
+			collective/src/sqmpackethandler.h
 
 FORMS    += client/ui/mainwindow.ui
+
+INCLUDEPATH += "include/"
