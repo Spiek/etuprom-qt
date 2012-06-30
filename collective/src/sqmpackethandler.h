@@ -10,16 +10,24 @@
 // qt core libs
 #include <QtCore/QObject>
 #include <QtCore/QIODevice>
-#include <QtCore/QMap>
-#include <QtCore/QDataStream>
+#include <QtCore/QVariant>
+#include <QtCore/QtEndian>
 
 //
 // PACKETLENGTHTYPE
 //
-// The datatype which will read first from datastream to determinate the content length
+// The datatype will read at first from datastream to determinate the content length
 // NOTE: this value has to be the same on client and server, if not, the packet parser will not work properly
 //
 #define PACKETLENGTHTYPE quint32
+
+//
+// PROPERTYNAME
+//
+// The property key will be used to store the non finished packet in the QObject meta system of the sending IODevice
+// NOTE: don't use key names which start with _q_, because this will be used by Qt itself
+//
+#define PROPERTYNAME_PACKET "SQMPacketHandler_packet"
 
 //
 // DataPacket
@@ -41,30 +49,30 @@ class SQMPacketHandler : public QObject
 
     public slots:
         void newDevice(QIODevice* device);
-        void disconnectedDevice(QIODevice *device);
+        void disconnectedDevice(QIODevice *device = 0);
         void dataHandler();
 
     public:
         // singelton static functions
-        static void create(QObject *object = 0);
+        static void create(QObject *object = 0, quint32 maxDataLength = 20971520);
         static SQMPacketHandler* getInstance();
 
         // static helper functions
         static void sendDataPacket(DataPacket* dpSrc, QByteArray *baDatatoSend);
+        static void sendDataPacket(QIODevice* device, QByteArray *baDatatoSend);
 
     protected:
-        // protected con and decon so that no one (except the static create method) is able to construct an object!
-        SQMPacketHandler(QObject *parent = 0);
+        // protected con and decon so that no one (except the static create method) is able to construct an object!+
+        // set max length by default to 20MB
+        SQMPacketHandler(quint32 maxDataLength = 20971520, QObject *parent = 0);
         ~SQMPacketHandler();
 
     private:
-        // singelton static memeber
+        // static memeber for singelton
         static SQMPacketHandler *sqmPacketHandler;
 
         // dynamic members
-        QMap<QIODevice*, DataPacket*> mapPacketsInProgress;
-        QList<QIODevice*> lstPeers;
-        QDataStream *dataStreamTmp;
+        quint32 intMaxDataLength;
 };
 
 #endif // SQMPACKETHANDLER_H

@@ -6,25 +6,34 @@
 
 #include "SQMPacketHandler"
 
+
+
 //
 // Con's and Decon
 //
 
-SQMPacketHandler::SQMPacketHandler(QObject *parent) : QObject(parent)
+/*
+ * SQMPacketHandler - construct the PacketHandler
+ *                    NOTE: protected constructor for SINGELTON construction
+ */
+SQMPacketHandler::SQMPacketHandler(quint32 maxDataLength, QObject *parent) : QObject(parent)
 {
-    // create tmp Data Stream for protocol parsing, later
-    this->dataStreamTmp = new QDataStream;
+    // save construct vars
+    this->intMaxDataLength = maxDataLength;
 }
 
+/*
+ * ~SQMPacketHandler - deconstructor
+ */
 SQMPacketHandler::~SQMPacketHandler()
 {
     // cleanup
-    delete this->dataStreamTmp;
 }
 
 
+
 //
-// SLOT handlings!
+// SLOT section
 //
 
 /*
@@ -32,9 +41,9 @@ SQMPacketHandler::~SQMPacketHandler()
  */
 void SQMPacketHandler::newDevice(QIODevice* device)
 {
-    // append device to device list and connect socket with packet parser
-    this->lstPeers.append(device);
+    // connect to PacketHanderss
     this->connect(device, SIGNAL(readyRead()), this, SLOT(dataHandler()));
+    this->connect(device, SIGNAL(aboutToClose()), this, SLOT(disconnectedDevice()));
 }
 
 /*
@@ -42,27 +51,46 @@ void SQMPacketHandler::newDevice(QIODevice* device)
  */
 void SQMPacketHandler::disconnectedDevice(QIODevice *device)
 {
-    // remove device from device list and disconnect socket from packet parser
-    this->lstPeers.removeOne(device);
-    device->disconnect(this);
-    this->disconnect(device);
+    // aquire device by param or as sender, if not possible, exit
+    QIODevice *ioPacketDevice = !device ? qobject_cast<QIODevice*>(this->sender()) : device;
+    if(!ioPacketDevice) {
+        return;
+    }
+
+    // remove all connected signals device --> this and this --> device
+    ioPacketDevice->disconnect(this);
+    this->disconnect(ioPacketDevice);
+
+    // delete all used properties
+    QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
+    DataPacket *packet = variantStoredPackage.type() == QVariant::Invalid ? (DataPacket*)0 : (DataPacket*)variantStoredPackage.value<void *>();
+    if(packet) {
+        delete packet;
+    }
+
+    // delete properties
+    ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
 }
 
 /*
- * dataHandler - protocol parser logic, will called by every device on which data is available
+ * dataHandler - packet parser logic, will called by every device on which data is available
  */
 void SQMPacketHandler::dataHandler()
 {
-    // get the sending QIODevice
+    // get the sending QIODevice and exit if it's not a valid
     QIODevice *ioPacketDevice = qobject_cast<QIODevice*>(this->sender());
+    if(!ioPacketDevice) {
+        return;
+    }
 
     /// <Aquire Data Packet>
 
-    // contains later a ready constructed DataPacket
-    DataPacket *packet = 0;
+    // get the exesting data packet, or if it doesn't exist a 0 Pointer
+    QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
+    DataPacket *packet = variantStoredPackage.type() == QVariant::Invalid ? (DataPacket*)0 : (DataPacket*)variantStoredPackage.value<void *>();
 
     // create new data packet if data packet doesn't exist
-    if(!this->mapPacketsInProgress.contains(ioPacketDevice)) {
+    if(!packet) {
         DataPacket *packetNew = new DataPacket;
         packet = packetNew;
 
@@ -70,9 +98,7 @@ void SQMPacketHandler::dataHandler()
         packetNew->intPacktLength = 0;
         packetNew->baRawPacketData = 0;
         packetNew->ioPacketDevice = ioPacketDevice;
-        this->mapPacketsInProgress.insert(ioPacketDevice, packetNew);
-    } else {
-        packet = this->mapPacketsInProgress.value(ioPacketDevice);
+        ioPacketDevice->setProperty(PROPERTYNAME_PACKET, qVariantFromValue((void *) packetNew));
     }
 
     /// </Aquire Data Packet> <-- Packet was successfull aquired!
@@ -80,20 +106,24 @@ void SQMPacketHandler::dataHandler()
 
     // simplefy some header lengths
     PACKETLENGTHTYPE intAvailableDataLength = ioPacketDevice->bytesAvailable();
-    PACKETLENGTHTYPE intHeaderPacketLength = sizeof(PACKETLENGTHTYPE);
 
     // read header if it is not present, yet
     if(!packet->intPacktLength) {
         // if not enough data available to read complete header, exit here and wait for more data!
-        if(intAvailableDataLength < intHeaderPacketLength) {
+        if(intAvailableDataLength < sizeof(PACKETLENGTHTYPE)) {
             return;
         }
 
         // otherwise, enough data is present to read the complete header, so do it :-)
-        else {
-            // read content length with the help of Qt's powerful Datastream serializer
-            this->dataStreamTmp->setDevice(ioPacketDevice);
-            (*this->dataStreamTmp) >> packet->intPacktLength;
+        // read content length with the help of Qt's Endian method qFromBigEndian
+        QByteArray baPacketLength = ioPacketDevice->read(sizeof(PACKETLENGTHTYPE));
+        PACKETLENGTHTYPE* ptrPacketLength = (PACKETLENGTHTYPE*)baPacketLength.constData();
+        packet->intPacktLength = qFromBigEndian<PACKETLENGTHTYPE>(*ptrPacketLength);
+
+        // security check:
+        // if content length is greater than the allowed intMaxDataLength, close the device immediately
+        if(packet->intPacktLength > this->intMaxDataLength) {
+            return ioPacketDevice->close();
         }
     }
 
@@ -108,12 +138,12 @@ void SQMPacketHandler::dataHandler()
     // read the complete content of packet
     packet->baRawPacketData = new QByteArray(ioPacketDevice->read(packet->intPacktLength));
 
-    // at this point the entire packet was read:
-    // now we delete the packet from the "packet-in-progress"-list
-    this->mapPacketsInProgress.remove(ioPacketDevice);
-
     // and send packet as signal out in the world ("the world" has the task to delete it!)
     emit this->newPacketReceived(packet);
+
+    // at this point the entire packet was read and sent:
+    // now we delete all used properties
+    ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
 
     /// </Read Content> <-- Content read complete!
 
@@ -123,21 +153,34 @@ void SQMPacketHandler::dataHandler()
     }
 }
 
+
+
 //
 // Static Helper section
 //
+
+/*
+ * sendDataPacket - send given data to given IODevice including packet length
+ */
 void SQMPacketHandler::sendDataPacket(DataPacket *dpSrc, QByteArray *baDatatoSend)
 {
-    // extract src device from src package
-    QIODevice *device = dpSrc->ioPacketDevice;
+   return SQMPacketHandler::sendDataPacket(dpSrc->ioPacketDevice, baDatatoSend);
+}
 
-    // send the content length
-    QDataStream streamContentLength(device);
-    streamContentLength << (PACKETLENGTHTYPE)baDatatoSend->length();
+/*
+ * sendDataPacket - send given data to given IODevice including packet length
+ */
+void SQMPacketHandler::sendDataPacket(QIODevice *device, QByteArray *baDatatoSend)
+{
+    // create content length with the help of Qt's Endian method qToBigEndian
+    PACKETLENGTHTYPE intDataLength = baDatatoSend->length();
+    intDataLength = qToBigEndian<PACKETLENGTHTYPE>(intDataLength);
 
-    // send the data
+    // send the content-length and data
+    device->write((char*)&intDataLength, sizeof(PACKETLENGTHTYPE));
     device->write(*baDatatoSend);
 }
+
 
 
 //
@@ -148,11 +191,11 @@ void SQMPacketHandler::sendDataPacket(DataPacket *dpSrc, QByteArray *baDatatoSen
 SQMPacketHandler* SQMPacketHandler::sqmPacketHandler = 0;
 
 // SINGELTON Constructor
-void SQMPacketHandler::create(QObject *object)
+void SQMPacketHandler::create(QObject *object, quint32 maxDataLength)
 {
     // only create instance if we haven't allready one
     if(!SQMPacketHandler::sqmPacketHandler) {
-        SQMPacketHandler::sqmPacketHandler = new SQMPacketHandler(object);
+        SQMPacketHandler::sqmPacketHandler = new SQMPacketHandler(maxDataLength, object);
     }
 }
 
