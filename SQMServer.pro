@@ -4,23 +4,42 @@
 # or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
 #
 
-QT       += core network
-
+# Qt Settings
+QT       += core network sql
 QT       -= gui
 
+# Compile Settings
 TARGET	= SQMServer
 CONFIG	+= console
 CONFIG	-= app_bundle
-
 TEMPLATE = app
 
+# Sources
+SOURCES +=	server/src/main.cpp \
+			server/src/sqmpeerhandler.cpp \
+			collective/src/sqmpackethandler.cpp \
+			server/src/sqmpacketprocessor.cpp \
+			collective/proto/src/protocol.pb.cc \
+			server/src/global.cpp
 
-SOURCES += server/src/main.cpp \
-    server/src/sqmpeerhandler.cpp \
-    collective/src/sqmpackethandler.cpp
+# Headers
+HEADERS +=	server/src/sqmpeerhandler.h \
+			collective/src/sqmpackethandler.h \
+			server/src/sqmpacketprocessor.h \
+			collective/proto/src/login.pb.h \
+			collective/proto/src/protocol.pb.h \
+			server/src/global.h
 
-HEADERS += \
-    server/src/sqmpeerhandler.h \
-    collective/src/sqmpackethandler.h
-
+# include pathes
 INCLUDEPATH += "include/"
+INCLUDEPATH += "collective/proto/src/"
+
+# remove all existing compiled .proto files and recompile all .proto files
+Protosrcdir = $$_PRO_FILE_PWD_/collective/proto
+Prototargetdir = $$Protosrcdir/src
+win32:system("del /q \"$$Prototargetdir/\"")
+linux:system("rm -f $$Prototargetdir/*")
+system(protoc -I=$$Protosrcdir --cpp_out=$$Prototargetdir $$Protosrcdir/*.proto)
+
+# add protobuf lib (we can't do that in mkspecs because the protobuf lib has to be set as last lib)
+LIBS += -lprotobuf

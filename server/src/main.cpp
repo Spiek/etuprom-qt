@@ -4,26 +4,24 @@
  * or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
  */
 
-// qt core libs
+// Qt (core)
 #include <QtCore/QCoreApplication>
 
+// Qt (sql)
+#include <QtSql/QSqlDatabase>
+
+// C
+#include <stdlib.h>
+
 // own libs
-#include "SQMPeerHandler"
-#include "SQMPacketHandler"
+#include "global.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    // initialize peer handler, which handled the peers
-    SQMPeerHandler peerHandler(1234, QHostAddress::Any, &a);
-    peerHandler.listen();
-
-    // initialize packet handler, which handled the packet parsing
-    SQMPacketHandler::create(&a);
-    SQMPacketHandler* packetHandler = SQMPacketHandler::getInstance();
-    a.connect(&peerHandler, SIGNAL(newDevice(QIODevice*)), packetHandler, SLOT(newDevice(QIODevice*)));
-    a.connect(&peerHandler, SIGNAL(disconnectedDevice(QIODevice*)), packetHandler, SLOT(disconnectedDevice(QIODevice*)));
+    // initialize globalization
+    Global::initialize();
 
     // start eventloop
     return a.exec();
