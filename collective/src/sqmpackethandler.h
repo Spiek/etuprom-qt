@@ -49,11 +49,11 @@ class SQMPacketHandler : public QObject
     Q_OBJECT
     signals:
         void newPacketReceived(DataPacket *packet);
+        void deviceUsageChanged(QIODevice* device, bool used);
 
     public slots:
-        void newDevice(QIODevice* device);
-        void disconnectedDevice(QIODevice *device = 0);
-        void dataHandler();
+        void addDevice(QIODevice* device);
+        void removeDevice(QIODevice *device = 0);
 
     public:
         // singelton static functions
@@ -71,6 +71,9 @@ class SQMPacketHandler : public QObject
         // set max length by default to 20MB
         SQMPacketHandler(quint32 maxDataLength = 20971520, QObject *parent = 0);
         ~SQMPacketHandler();
+
+    private slots:
+         void dataHandler();
 
     private:
         // static memeber for singelton

@@ -35,8 +35,7 @@ void Global::initialize()
     // initialize packet handler, which handled the packet parsing
     SQMPacketHandler::create(app);
     Global::packetHandler = SQMPacketHandler::getInstance();
-    app->connect(Global::peerHandler, SIGNAL(newDevice(QIODevice*)), Global::packetHandler, SLOT(newDevice(QIODevice*)));
-    app->connect(Global::peerHandler, SIGNAL(disconnectedDevice(QIODevice*)), Global::packetHandler, SLOT(disconnectedDevice(QIODevice*)));
+    app->connect(Global::peerHandler, SIGNAL(newDevice(QIODevice*)), Global::packetHandler, SLOT(addDevice(QIODevice*)));
 
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(app);

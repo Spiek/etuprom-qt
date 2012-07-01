@@ -32,7 +32,7 @@ void Global::initialize()
     // init packet handler
     SQMPacketHandler::create(app);
     Global::packetHandler = SQMPacketHandler::getInstance();
-    Global::packetHandler->newDevice(Global::socketServer);
+    Global::packetHandler->addDevice(Global::socketServer);
 
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(Global::packetHandler);

@@ -37,19 +37,22 @@ SQMPacketHandler::~SQMPacketHandler()
 //
 
 /*
- * newDevice - add device for packet parsing
+ * addDevice - add device for packet parsing
  */
-void SQMPacketHandler::newDevice(QIODevice* device)
+void SQMPacketHandler::addDevice(QIODevice* device)
 {
     // connect to PacketHanderss
     this->connect(device, SIGNAL(readyRead()), this, SLOT(dataHandler()));
-    this->connect(device, SIGNAL(aboutToClose()), this, SLOT(disconnectedDevice()));
+    this->connect(device, SIGNAL(aboutToClose()), this, SLOT(removeDevice()));
+
+    // inform the world about the new connected device
+    emit this->deviceUsageChanged(device, true);
 }
 
 /*
- * disconnectedDevice - remove device from packet parsing
+ * removeDevice - remove device from packet parsing
  */
-void SQMPacketHandler::disconnectedDevice(QIODevice *device)
+void SQMPacketHandler::removeDevice(QIODevice *device)
 {
     // aquire device by param or as sender, if not possible, exit
     QIODevice *ioPacketDevice = !device ? qobject_cast<QIODevice*>(this->sender()) : device;
@@ -70,6 +73,9 @@ void SQMPacketHandler::disconnectedDevice(QIODevice *device)
 
     // delete properties
     ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
+
+    // inform the world about the disconnected device
+    emit this->deviceUsageChanged(ioPacketDevice, false);
 }
 
 /*
