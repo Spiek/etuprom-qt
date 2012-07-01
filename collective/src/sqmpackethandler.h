@@ -13,6 +13,9 @@
 #include <QtCore/QVariant>
 #include <QtCore/QtEndian>
 
+// include ansi libs
+#include <string>
+
 //
 // PACKETLENGTHTYPE
 //
@@ -59,7 +62,9 @@ class SQMPacketHandler : public QObject
 
         // static helper functions
         static void sendDataPacket(DataPacket* dpSrc, QByteArray *baDatatoSend);
+        static void sendDataPacket(DataPacket* dpSrc, std::string strDatatoSend);
         static void sendDataPacket(QIODevice* device, QByteArray *baDatatoSend);
+        static void sendDataPacket(QIODevice* device, std::string strDatatoSend);
 
     protected:
         // protected con and decon so that no one (except the static create method) is able to construct an object!+

@@ -162,9 +162,27 @@ void SQMPacketHandler::dataHandler()
 /*
  * sendDataPacket - send given data to given IODevice including packet length
  */
+void SQMPacketHandler::sendDataPacket(DataPacket *dpSrc, std::string strDatatoSend)
+{
+   QByteArray baData(strDatatoSend.c_str(), strDatatoSend.length());
+   return SQMPacketHandler::sendDataPacket(dpSrc->ioPacketDevice, &baData);
+}
+
+/*
+ * sendDataPacket - send given data to given IODevice including packet length
+ */
 void SQMPacketHandler::sendDataPacket(DataPacket *dpSrc, QByteArray *baDatatoSend)
 {
    return SQMPacketHandler::sendDataPacket(dpSrc->ioPacketDevice, baDatatoSend);
+}
+
+/*
+ * sendDataPacket - send given data to given IODevice including packet length
+ */
+void SQMPacketHandler::sendDataPacket(QIODevice *device, std::string strDatatoSend)
+{
+    QByteArray baData(strDatatoSend.c_str(), strDatatoSend.length());
+    return SQMPacketHandler::sendDataPacket(device, &baData);
 }
 
 /*

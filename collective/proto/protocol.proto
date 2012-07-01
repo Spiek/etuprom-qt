@@ -1,0 +1,29 @@
+package Protocol;
+message Packet
+{
+	// Packettype
+	enum PacketType { LoginRequest = 1; LoginResponse = 2; }
+	
+	// types
+	required PacketType packetType = 1;
+	
+	// packet types
+	optional LoginRequest requestLogin = 2;
+	optional LoginResponse responseLogin = 3;
+}
+
+// Sub Messages
+message LoginRequest
+{
+	required string username = 1;
+	required string password = 2;
+}
+
+message LoginResponse
+{
+	// Messagetype
+	enum Type { Success = 1; LoginIncorect = 2; }
+
+	// repsonse type
+	required Type type = 1;
+}
