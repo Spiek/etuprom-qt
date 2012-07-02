@@ -8,7 +8,8 @@
 
 SQMPacketProcessor::SQMPacketProcessor(QObject *parent) : QObject(parent)
 {
-
+    // protobuf lib validation
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
 }
 
 

@@ -7,12 +7,13 @@
 #ifndef SQMPACKETPROCESSOR_H
 #define SQMPACKETPROCESSOR_H
 
+// Qt (core)
 #include <QObject>
 
-// own classes
+// own (collective)
 #include "SQMPacketHandler"
 
-// protobuf protocol
+// own (protbuf)
 #include "protocol.pb.h"
 
 class SQMPacketProcessor : public QObject
