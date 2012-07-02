@@ -7,12 +7,20 @@
 #ifndef LOGINFORM_H
 #define LOGINFORM_H
 
-#include <QtGui/QMainWindow>
+// Qt (core)
 #include <QtCore/QTimer>
 #include <QtCore/QCryptographicHash>
 
-#include "global.h"
+// Qt (gui)
+#include <QtGui/QMainWindow>
+
+// own (protbuf)
 #include "protocol.pb.h"
+
+// own (client)
+#include "global.h"
+
+// own (gui)
 #include "mainwindow.h"
 
 namespace Ui {
@@ -24,19 +32,21 @@ class LoginForm : public QMainWindow
     Q_OBJECT
 
     public:
-        LoginForm(QWidget *parent = 0);
+        LoginForm(QString strErrorMessage = "", QWidget *parent = 0);
         ~LoginForm();
 
     private:
         Ui::LoginForm *ui;
 
     private slots:
-        // gui
+        // Gui
         bool loginValidator();
         void login();
+
+        // PacketProcessor
         void loginRequestReceived(bool loggedin);
 
-        // server
+        // Socket slots
         void serverConnectionSuccessfull();
         void serverConnectionError(QAbstractSocket::SocketError socketError);
         void connectToServer();

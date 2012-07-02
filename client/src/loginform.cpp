@@ -7,11 +7,21 @@
 #include "loginform.h"
 #include "ui_loginform.h"
 
-LoginForm::LoginForm(QWidget *parent) :
+LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::LoginForm)
 {
     ui->setupUi(this);
+
+    // if error message was set, set error message and reconstruct server socket
+    if(!strErrorMessage.isEmpty()) {
+        this->ui->statusbar->showMessage(strErrorMessage);
+    }
+
+    // only allow unconnected sockets, reset all other socket states to have a clear state
+    if(Global::socketServer->state() !=  QTcpSocket::UnconnectedState) {
+        Global::socketServer->disconnectFromHost();
+    }
 
     // signal --> slot connections (Socket)
     this->connect(Global::socketServer, SIGNAL(connected()), this, SLOT(serverConnectionSuccessfull()));
@@ -28,7 +38,10 @@ LoginForm::LoginForm(QWidget *parent) :
     this->connect(Global::packetProcessor, SIGNAL(loginResponse(bool)), this, SLOT(loginRequestReceived(bool)));
 
     // connect to server
-    this->connectToServer();
+    // Note: it could happen that the class was constructed in an event from the QTcpSocket (like the QTcpSocket::error() slot),
+    //       if this is the case, a "direct" reconnect doesn't work, to solve this issue we call the connectToServer slot over the event system (not directly!)
+    //       src: https://bugreports.qt-project.org/browse/QTBUG-18082
+    QMetaObject::invokeMethod(this, "connectToServer", Qt::QueuedConnection);
 }
 
 LoginForm::~LoginForm()
@@ -39,10 +52,14 @@ LoginForm::~LoginForm()
 
 bool LoginForm::loginValidator()
 {
+    // enable the login button if username and password was typed in
     if(this->ui->lineEditLogin->text().isEmpty() || this->ui->lineEditPassword->text().isEmpty()) {
         this->ui->pushButtonLogin->setEnabled(false);
         return false;
-    } else {
+    }
+
+    // otherwise disable the login button
+    else {
         this->ui->pushButtonLogin->setEnabled(true);
         return true;
     }
@@ -50,28 +67,30 @@ bool LoginForm::loginValidator()
 
 void LoginForm::login()
 {
-    if(!this->loginValidator()) {
-        return;
-    }
-
+    // disbale the login button, so that the user can't login twice
     this->ui->pushButtonLogin->setEnabled(false);
+
+    // inform the user about the login process
     this->ui->statusbar->showMessage("Login...");
 
     // create login protobuf objects and send it to the server
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    // create packet container
     Protocol::Packet packet;
     packet.set_packettype(Protocol::Packet_PacketType_LoginRequest);
 
+    // create login packet
     Protocol::LoginRequest *login = packet.mutable_requestlogin();
     login->set_username(this->ui->lineEditLogin->text().toUtf8().constData());
     login->set_password(QCryptographicHash::hash(this->ui->lineEditPassword->text().toAscii(), QCryptographicHash::Sha1).toHex().constData());
+
+    // send protobuf packet container as Length-Prefix-packet over the stream
     Global::packetHandler->sendDataPacket(Global::socketServer, packet.SerializeAsString());
 }
 
 
 void LoginForm::connectToServer()
 {
-    // connect to server
+     // connect to server
     Global::socketServer->connectToHost(Global::strServerHostname, Global::intServerPort);
 
     // inform the user
@@ -82,25 +101,32 @@ void LoginForm::connectToServer()
 
 void LoginForm::serverConnectionSuccessfull()
 {
+    // inform the user about the successfull connection and enable the window, so that the user can login!
     this->ui->statusbar->showMessage("Successfull connected to Server...", 10000);
     this->ui->centralwidget->setDisabled(false);
 }
 
 void LoginForm::serverConnectionError(QAbstractSocket::SocketError socketError)
 {
-    this->ui->statusbar->showMessage(QString("Error \"%1\" occours, try again in 10 Seconds...").arg(Global::socketServer->errorString()));
+    // inform the user about the error and not allow the user to login
+    this->ui->statusbar->showMessage(QString("Error \"%1\" occours, try again in 3 Seconds...").arg(Global::socketServer->errorString()));
     this->ui->centralwidget->setDisabled(true);
-    QTimer::singleShot(10000, this, SLOT(connectToServer()));
+
+    // try to establish the connection to the server after 3 seconds again
+    QTimer::singleShot(3000, this, SLOT(connectToServer()));
 }
 
 void LoginForm::loginRequestReceived(bool loggedin)
 {
-    // if login wasn't success
+    // inform the user about login wasn't success, reset the password, and let the user login again :-)
     if(!loggedin) {
         this->ui->statusbar->showMessage("Login failed, username or password wrong, please try again...");
         this->ui->lineEditPassword->clear();
         this->ui->centralwidget->setDisabled(false);
-    } else {
+    }
+
+    // login was success, close login form and jump to MainWindow
+    else {
         MainWindow *mainWindow = new MainWindow;
         mainWindow->show();
         this->deleteLater();
