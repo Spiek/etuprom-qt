@@ -52,7 +52,7 @@ class SQMPacketHandler : public QObject
         void deviceUsageChanged(QIODevice* device, bool used);
 
     public slots:
-        void addDevice(QIODevice* device);
+        void addDevice(QIODevice* device, bool forgetonclose = true);
         void removeDevice(QIODevice *device = 0);
 
     public:

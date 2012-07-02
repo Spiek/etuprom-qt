@@ -39,11 +39,15 @@ SQMPacketHandler::~SQMPacketHandler()
 /*
  * addDevice - add device for packet parsing
  */
-void SQMPacketHandler::addDevice(QIODevice* device)
+void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose)
 {
     // connect to PacketHanderss
     this->connect(device, SIGNAL(readyRead()), this, SLOT(dataHandler()));
-    this->connect(device, SIGNAL(aboutToClose()), this, SLOT(removeDevice()));
+
+    // if user want that the packet handler don't forget the socket, after the socket was closed
+    if(forgetonclose) {
+        this->connect(device, SIGNAL(aboutToClose()), this, SLOT(removeDevice()));
+    }
 
     // inform the world about the new connected device
     emit this->deviceUsageChanged(device, true);
