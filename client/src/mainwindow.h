@@ -7,22 +7,34 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+// Qt (gui)
 #include <QMainWindow>
 
+// own (client)
+#include "global.h"
+
+// own (gui)
+#include "loginform.h"
+
+
 namespace Ui {
-class MainWindow;
+    class MainWindow;
 }
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+    public:
+        MainWindow(QWidget *parent = 0);
+        ~MainWindow();
 
-private:
-    Ui::MainWindow *ui;
+    private:
+        Ui::MainWindow *ui;
+
+    private slots:
+        // Socket slots
+        void serverConnectionError(QAbstractSocket::SocketError socketError);
 };
 
 #endif // MAINWINDOW_H
