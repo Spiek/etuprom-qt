@@ -44,9 +44,16 @@ void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose)
     // connect to PacketHanderss
     this->connect(device, SIGNAL(readyRead()), this, SLOT(dataHandler()));
 
-    // if user want that the packet handler don't forget the socket, after the socket was closed
+    // if user want that the Packethandler forget the device on close,
+    // remove the device after device has closed
     if(forgetonclose) {
         this->connect(device, SIGNAL(aboutToClose()), this, SLOT(removeDevice()));
+    }
+
+    // if user want that the Packethandler don't forget the device on close,
+    // remove the device after device was destroyed
+    else {
+        this->connect(device, SIGNAL(destroyed()), this, SLOT(removeDevice()));
     }
 
     // inform the world about the new connected device
