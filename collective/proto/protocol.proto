@@ -2,14 +2,17 @@ package Protocol;
 message Packet
 {
 	// Packettype
-	enum PacketType { LoginRequest = 1; LoginResponse = 2; }
+	enum PacketType { LoginRequest = 1; LoginResponse = 2; UserInformations = 3; }
 	
 	// types
 	required PacketType packetType = 1;
 	
-	// packet types
+	// packet types: Login
 	optional LoginRequest requestLogin = 2;
 	optional LoginResponse responseLogin = 3;
+	
+	// packet types: User informations
+	optional UserInformations userinformations = 4;
 }
 
 // Sub Messages
@@ -26,4 +29,20 @@ message LoginResponse
 
 	// repsonse type
 	required Type type = 1;
+}
+
+message UserInformations
+{
+	repeated Contact contact = 1;
+}
+
+message Contact
+{
+	// Packettype
+	enum State { Offline = 0; Online = 1; }
+	
+	required int32 id = 1;
+	required string username = 2;
+	required State state = 3;
+	required string group = 4;
 }
