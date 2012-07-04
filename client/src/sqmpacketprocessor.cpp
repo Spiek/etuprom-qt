@@ -25,9 +25,16 @@ void SQMPacketProcessor::newPacketReceived(DataPacket *packet)
     {
         // login packet
         case Protocol::Packet_PacketType_LoginResponse :
+        {
             Protocol::LoginResponse loginResponse = protocolPacket.responselogin();
             return this->handleLoginResponse(packet, &protocolPacket, &loginResponse);
-        break;
+        }
+
+        // user information packet
+        case Protocol::Packet_PacketType_UserInformations :
+        {
+            emit this->userInformationsReceived(protocolPacket.userinformations());
+        }
     }
 
     // after handling packet delete it

@@ -31,6 +31,9 @@ HEADERS  += client/src/mainwindow.h  \
 FORMS    += client/ui/mainwindow.ui \
 			client/ui/loginform.ui
 
+RESOURCES += client/res/global.qrc
+
+
 # include pathes
 INCLUDEPATH += "include/"
 INCLUDEPATH += "collective/proto/src/"

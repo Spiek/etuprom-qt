@@ -8,7 +8,9 @@
 #define MAINWINDOW_H
 
 // Qt (gui)
-#include <QMainWindow>
+#include <QtGui/QMainWindow>
+#include <QtGui/QIcon>
+#include <QtGui/QTreeWidgetItem>
 
 // own (client)
 #include "global.h"
@@ -32,9 +34,13 @@ class MainWindow : public QMainWindow
     private:
         Ui::MainWindow *ui;
 
+        // helper functions
+        void requestUserInformations();
+
     private slots:
         // Socket slots
         void serverConnectionError(QAbstractSocket::SocketError socketError);
+        void userInformationsReceived(Protocol::UserInformations userInformations);
 };
 
 #endif // MAINWINDOW_H

@@ -39,7 +39,7 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 
     // connect to server
     // Note: it could happen that the class was constructed in an event from the QTcpSocket (like the QTcpSocket::error() slot),
-    //       if this is the case, a "direct" reconnect doesn't work, to solve this issue we call the connectToServer slot over the event system (not directly!)
+    //       if this is the case, a "direct" host reconnect doesn't work, to solve this issue we call the connectToServer slot over the event system (not directly!)
     //       src: https://bugreports.qt-project.org/browse/QTBUG-18082
     QMetaObject::invokeMethod(this, "connectToServer", Qt::QueuedConnection);
 }

@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/state">
+        <file alias="available">user-available.png</file>
+        <file alias="offline">user-offline.png</file>
+    </qresource>
+</RCC>

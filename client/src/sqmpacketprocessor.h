@@ -24,6 +24,7 @@ class SQMPacketProcessor : public QObject
 
     signals:
         void loginResponse(bool loggedin);
+        void userInformationsReceived(Protocol::UserInformations userInformations);
 
     public slots:
         void newPacketReceived(DataPacket *packet);
