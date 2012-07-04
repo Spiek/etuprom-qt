@@ -44,9 +44,10 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
     Protocol::LoginResponse *loginResponse = packetResponse.mutable_responselogin();
 
     // login was success
+    User* user = 0;
     if(query.next()) {
         // create new user struct
-        User *user = new User;
+        user = new User;
         user->intId = query.value(0).toInt();
         user->strUsername = username;
         user->ioPeer = dataPacket->ioPacketDevice;
@@ -61,6 +62,36 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
         loginResponse->set_type(Protocol::LoginResponse_Type_LoginIncorect);
     }
 
-    // send packet
+    // send login response packet
     Global::packetHandler->sendDataPacket(dataPacket->ioPacketDevice, packetResponse.SerializeAsString());
+
+    // if login was correct, send userinformations
+    if(user) {
+        QString strQuery =
+                " SELECT"
+                "	users.id,"
+                "	users.username,"
+                "	users.state,"
+                "	userlist.group"
+                " FROM users"
+                " INNER JOIN userlist"
+                " ON userlist.user_id = %1 AND users.id = userlist.contact_user_id";
+        strQuery = strQuery.arg(user->intId);
+        QSqlQuery query(strQuery, database);
+
+        // build the protocol packet
+        Protocol::Packet packetUserInformations;
+        packetUserInformations.set_packettype(Protocol::Packet_PacketType_UserInformations);
+        Protocol::UserInformations *userInformation = packetUserInformations.mutable_userinformations();
+        while(query.next()) {
+            Protocol::Contact *contact = userInformation->add_contact();
+            contact->set_id(query.value(0).toInt());
+            contact->set_username(query.value(1).toString().toStdString());
+            contact->set_state((Protocol::Contact::State)query.value(2).toInt());
+            contact->set_group(query.value(3).toString().toStdString());
+        }
+
+        // send userinformation packet
+        Global::packetHandler->sendDataPacket(dataPacket->ioPacketDevice, packetUserInformations.SerializeAsString());
+    }
 }
