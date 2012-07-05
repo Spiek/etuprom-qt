@@ -39,7 +39,7 @@ SQMPacketHandler::~SQMPacketHandler()
 /*
  * addDevice - add device for packet parsing
  */
-void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose)
+void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose, bool forgetondestroy)
 {
     // connect to PacketHanderss
     this->connect(device, SIGNAL(readyRead()), this, SLOT(dataHandler()));
@@ -50,9 +50,9 @@ void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose)
         this->connect(device, SIGNAL(aboutToClose()), this, SLOT(removeDevice()));
     }
 
-    // if user want that the Packethandler don't forget the device on close,
+    // if user want that the Packethandler forget the device on destroy,
     // remove the device after device was destroyed
-    else {
+    if(forgetondestroy){
         this->connect(device, SIGNAL(destroyed()), this, SLOT(removeDevice()));
     }
 
@@ -169,6 +169,40 @@ void SQMPacketHandler::dataHandler()
         return this->dataHandler();
     }
 }
+
+/*
+ * newTcpHost - add new connected tcp host to packet parser
+ *              and make sure that the socket will deleted properly
+ */
+void SQMPacketHandler::newTcpHost()
+{
+    QTcpSocket *socket = this->serverTcp.nextPendingConnection();
+
+    // remove socket by disconnect from packet parser and delete it
+    this->connect(socket, SIGNAL(disconnected()), this, SLOT(removeDevice()));
+    this->connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
+
+    // add the device to packet parser without any delete option (we care for the deletion and removing from the packethandler)
+    // Note: we use this because there are some SIGNAL-emiting problems with the down-casted QTcpSocket (to QIODevice)
+    this->addDevice(socket, false, false);
+}
+
+
+
+
+//
+// Public section
+//
+
+/*
+ * startTcpListening - start listenening on given adress and port
+ */
+bool SQMPacketHandler::startTcpListening(quint16 port, QHostAddress address)
+{
+    this->connect(&this->serverTcp, SIGNAL(newConnection()), this, SLOT(newTcpHost()));
+    return this->serverTcp.listen(address, port);
+}
+
 
 
 

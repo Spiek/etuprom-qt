@@ -13,6 +13,10 @@
 #include <QtCore/QVariant>
 #include <QtCore/QtEndian>
 
+// qt network libs
+#include <QtNetwork/QTcpServer>
+#include <QtNetwork/QTcpSocket>
+
 // include ansi libs
 #include <string>
 
@@ -52,10 +56,13 @@ class SQMPacketHandler : public QObject
         void deviceUsageChanged(QIODevice* device, bool used);
 
     public slots:
-        void addDevice(QIODevice* device, bool forgetonclose = true);
+        void addDevice(QIODevice* device, bool forgetonclose = true, bool forgetondestroy = true);
         void removeDevice(QIODevice *device = 0);
 
     public:
+        // start tcp listening
+        bool startTcpListening(quint16 port, QHostAddress address = QHostAddress::Any);
+
         // singelton static functions
         static void create(QObject *object = 0, quint32 maxDataLength = 20971520);
         static SQMPacketHandler* getInstance();
@@ -73,7 +80,8 @@ class SQMPacketHandler : public QObject
         ~SQMPacketHandler();
 
     private slots:
-         void dataHandler();
+        void newTcpHost();
+        void dataHandler();
 
     private:
         // static memeber for singelton
@@ -81,6 +89,9 @@ class SQMPacketHandler : public QObject
 
         // dynamic members
         quint32 intMaxDataLength;
+
+        // members for tcpserver feature
+        QTcpServer serverTcp;
 };
 
 #endif // SQMPACKETHANDLER_H
