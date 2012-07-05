@@ -20,7 +20,7 @@ void Global::initialize()
     QCoreApplication* app = QCoreApplication::instance();
 
     // init database connection
-    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC", "default");
+    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");
     db.setDatabaseName("sqm");
     if(db.open()) {
         printf("Datenbank Verbindung erfolgreich!");

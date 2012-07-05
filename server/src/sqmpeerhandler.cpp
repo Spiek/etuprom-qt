@@ -60,7 +60,8 @@ void SQMPeerHandler::newConnection()
     emit this->newDevice(socketClient);
 
     // handle the disconnect signal
-    this->connect(socketClient, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
+    this->connect(socketClient, SIGNAL(disconnected()), socketClient, SIGNAL(aboutToClose()));
+    this->connect(socketClient, SIGNAL(disconnected()), socketClient, SLOT(deleteLater()));
 }
 
 

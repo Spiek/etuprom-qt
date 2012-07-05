@@ -19,14 +19,6 @@ class SQMPacketProcessor;
 // protobuf libs
 #include "protocol.pb.h"
 
-
-struct User
-{
-    quint32 intId;
-    QString strUsername;
-    QIODevice *ioPeer;
-};
-
 class SQMPacketProcessor : public QObject
 {
     Q_OBJECT
@@ -34,10 +26,11 @@ class SQMPacketProcessor : public QObject
         SQMPacketProcessor(QObject *parent = 0);
 
     private:
-        QMap<QIODevice*, User*> mapUserData;
+        QMap<QIODevice*, Protocol::User*> mapUserData;
 
     public slots:
         void newPacketReceived(DataPacket *packet);
+        void clientStreamChanged(QIODevice* device, bool used);
 
         // handler methods
         void handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket, Protocol::LoginRequest *login);
