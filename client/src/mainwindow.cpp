@@ -13,6 +13,9 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    // make sure that the gui was complete constructed
+    QApplication::processEvents(QEventLoop::ExcludeSocketNotifiers);
+
     // signal --> slot connections (Socket)
     this->connect(Global::socketServer, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(serverConnectionError(QAbstractSocket::SocketError)));
 
@@ -40,40 +43,47 @@ void MainWindow::userInformationsReceived(Protocol::UserInformations userInforma
     // toptreewidget items for the group assigment
     QMap<QString, QTreeWidgetItem*> mapTopTreeWidgetItems;
 
-    // create all needed gui elements for contacts
+    // loop contacts in contact list and all needed gui elements
     for(int i = 0;i<userInformations.contact_size();i++) {
         // simplefy contact
-        Protocol::Contact contact = userInformations.contact(i);
-        qint32 contactId = contact.id();
-        QString contactUserName = QString::fromStdString(contact.username());
-        Protocol::Contact::State contactState = contact.state();
-        QString contactGroup = QString::fromStdString(contact.group());
+        Protocol::Contact *contact = userInformations.mutable_contact(i);
 
-        // create state icon
+        // simplefy User
+        Protocol::User *user = contact->mutable_user();
+        qint32 userId = user->id();
+        QString userUsername = QString::fromStdString(user->username());
+        bool userOnline = user->online();
+        QString contactGroup = QString::fromStdString(contact->group());
+
+        // create on/offline icon
         QString strIconFilename;
-        if(contactState == Protocol::Contact::Online) {
+        if(userOnline) {
             strIconFilename = ":/state/available";
-        } else if(contactState == Protocol::Contact::Offline) {
+        } else {
             strIconFilename = ":/state/offline";
         }
         QIcon iconContact(strIconFilename);
 
-        // get/construct Top treewidget
+        // get/construct Top group treewidget
         QTreeWidgetItem *widgetItem = 0;
         if(mapTopTreeWidgetItems.contains(contactGroup)){
             widgetItem = mapTopTreeWidgetItems.value(contactGroup);
         } else {
             widgetItem = new QTreeWidgetItem;
-            this->ui->treeWidgetContactList->addTopLevelItem(widgetItem);
             widgetItem->setText(0, contactGroup);
             mapTopTreeWidgetItems.insert(contactGroup, widgetItem);
+            this->ui->treeWidgetContactList->addTopLevelItem(widgetItem);
         }
 
         // set contact data
         QTreeWidgetItem *treeWidgetUser = new QTreeWidgetItem;
-        treeWidgetUser->setData(0, Qt::UserRole, contactId);
-        treeWidgetUser->setText(0, contactUserName);
+        treeWidgetUser->setData(0, Qt::UserRole, userId);
+        treeWidgetUser->setText(0, userUsername);
         treeWidgetUser->setIcon(0, iconContact);
+
+        QFont font = treeWidgetUser->font(0);
+        font.setPointSize(12);
+        treeWidgetUser->setFont(0, font);
         widgetItem->addChild(treeWidgetUser);
     }
 }
