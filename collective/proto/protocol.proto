@@ -33,16 +33,28 @@ message LoginResponse
 
 message UserInformations
 {
+	// contact list
 	repeated Contact contact = 1;
+	
+	// logged in user information
+	required User user = 2;
 }
 
 message Contact
 {
-	// Packettype
-	enum State { Offline = 0; Online = 1; }
+	// user data
+	required User user = 1;
 	
+	// additional contact informations
+	required string group = 2;
+}
+
+message User
+{	
+	// user Data
 	required int32 id = 1;
 	required string username = 2;
-	required State state = 3;
-	required string group = 4;
+	required int32 state = 3;
+	required bool online = 4;
+	required bool visible = 5;
 }
