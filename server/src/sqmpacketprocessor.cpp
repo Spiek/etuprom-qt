@@ -17,9 +17,15 @@ void SQMPacketProcessor::newPacketReceived(DataPacket *packet)
     {
         // login packet
         case Protocol::Packet_PacketType_LoginRequest :
+        {
             Protocol::LoginRequest loginRequest = protocolPacket.requestlogin();
             return this->handleLogin(packet, &protocolPacket, &loginRequest);
-        break;
+            break;
+        }
+        default :
+        {
+            break;
+        }
     }
 
     // after handling packet delete it
@@ -33,10 +39,7 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
     QString password  = QString::fromStdString(login->password()).toAscii();
 
     // search for user
-    QSqlDatabase database = QSqlDatabase::database();
-    QString strQuery = QString("SELECT id, username, state, online, visible FROM users WHERE username = \"%1\" AND password = \"%2\";").arg(username, password);
-    qDebug() << strQuery;
-    QSqlQuery query(strQuery, database);
+    QSqlQuery query = this->dbLogin(username, password);
 
     // create default response packet
     Protocol::Packet packetResponse;
@@ -72,10 +75,8 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
         return;
     }
 
-    //
     // update user state in database
-    //
-    QSqlQuery(QString("UPDATE users SET online = 1 WHERE id = %1").arg(user->id()), database).exec();
+    this->dbUpdateUserOnOfflineState(user->id(), true);
 
     //
     // send UserInformations
@@ -90,19 +91,7 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
     userInformation->mutable_user()->MergeFrom(*user);
 
     // select all contacts which are in the contactlist of connection user
-    QString strContactListQuery =
-            " SELECT"
-            "	users.id,"
-            "	users.username,"
-            "	users.state,"
-            "   users.online,"
-            "   users.visible,"
-            "	userlist.group"
-            " FROM users"
-            " INNER JOIN userlist"
-            " ON userlist.user_id = %1 AND users.id = userlist.contact_user_id";
-    strContactListQuery = strContactListQuery.arg(user->id());
-    query = QSqlQuery(strContactListQuery, database);
+    query = this->dbGetContactList(user->id());
 
     // ... and add them to the protobuf contactlist
     while(query.next()) {
@@ -122,10 +111,69 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
 
 void SQMPacketProcessor::clientStreamChanged(QIODevice *device, bool used)
 {
-    // if we have a disconnect, remove user from cached user list
-    if(!used) {
+    // if we have a disconnect and user was logged in,
+    // remove user from cached user list and update on/offline state in db
+    if(!used &&  this->mapUserData.contains(device)) {
         Protocol::User *user = this->mapUserData.take(device);
-        QSqlQuery(QString("UPDATE users SET online = 0 WHERE id = %1").arg(user->id()), QSqlDatabase::database()).exec();
+        this->dbUpdateUserOnOfflineState(user->id(), false);
         delete user;
     }
+}
+
+
+//
+// Database helper method section
+//
+QSqlQuery SQMPacketProcessor::dbLogin(QString strUserName, QString strPassword)
+{
+    // build query
+    QString strQuery = QString(
+                "SELECT "
+                "	id, "
+                "	username, "
+                "	state, "
+                "	online, "
+                "	visible "
+                "FROM users "
+                "WHERE "
+                "	username = \"%1\" AND "
+                "	password = \"%2\"; "
+    ).arg(strUserName, strPassword);
+
+    // exec query and return the result
+    return QSqlQuery(strQuery, QSqlDatabase::database());
+}
+
+bool SQMPacketProcessor::dbUpdateUserOnOfflineState(qint32 intId, bool online)
+{
+    // build query
+    QString strQuery = QString(
+                "UPDATE "
+                "	users SET online = %1 "
+                "WHERE id = %2 "
+    ).arg((int)online).arg(intId);
+
+    // exec query and return the result
+    return QSqlQuery(strQuery, QSqlDatabase::database()).exec();
+}
+
+QSqlQuery SQMPacketProcessor::dbGetContactList(qint32 intId)
+{
+    // build query
+    QString strQuery = QString(
+                "SELECT "
+                "	users.id, "
+                "	users.username, "
+                "	users.state, "
+                "	users.online, "
+                "	users.visible, "
+                "	userlist.group "
+                "FROM users "
+                "INNER JOIN userlist "
+                "ON 	userlist.user_id = %1 AND "
+                "		users.id = userlist.contact_user_id; "
+    ).arg(intId);
+
+    // exec query and return the result
+    return QSqlQuery(strQuery, QSqlDatabase::database());
 }

@@ -32,8 +32,14 @@ class SQMPacketProcessor : public QObject
         void newPacketReceived(DataPacket *packet);
         void clientStreamChanged(QIODevice* device, bool used);
 
-        // handler methods
+        // handler helper methods
         void handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket, Protocol::LoginRequest *login);
+
+        // database helper methods
+        QSqlQuery dbLogin(QString strUserName, QString strPassword);
+        bool dbUpdateUserOnOfflineState(qint32 intId, bool online);
+        QSqlQuery dbGetContactList(qint32 intId);
+
 };
 
 #endif // SQMPACKETPROCESSOR_H
