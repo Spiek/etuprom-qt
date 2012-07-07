@@ -67,7 +67,7 @@ class SQMPacketHandler : public QObject
         static void create(QObject *object = 0, quint32 maxDataLength = 20971520);
         static SQMPacketHandler* getInstance();
 
-        // static helper functions
+        // static datapacket send functions
         static void sendDataPacket(DataPacket* dpSrc, QByteArray *baDatatoSend);
         static void sendDataPacket(DataPacket* dpSrc, std::string strDatatoSend);
         static void sendDataPacket(QIODevice* device, QByteArray *baDatatoSend);

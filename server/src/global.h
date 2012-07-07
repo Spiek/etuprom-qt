@@ -6,13 +6,11 @@
 
 // own libs
 #include "SQMPacketHandler"
-#include "sqmpeerhandler.h"
 #include "sqmpacketprocessor.h"
 
 class Global
 {
     public:
-        static SQMPeerHandler *peerHandler;
         static SQMPacketHandler *packetHandler;
         static SQMPacketProcessor *packetProcessor;
 

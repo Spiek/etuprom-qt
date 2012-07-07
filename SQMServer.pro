@@ -16,14 +16,13 @@ TEMPLATE = app
 
 # Sources
 SOURCES +=	server/src/main.cpp \
-			server/src/sqmpeerhandler.cpp \
 			collective/src/sqmpackethandler.cpp \
 			server/src/sqmpacketprocessor.cpp \
 			collective/proto/src/protocol.pb.cc \
 			server/src/global.cpp
 
 # Headers
-HEADERS +=	server/src/sqmpeerhandler.h \
+HEADERS +=	\
 			collective/src/sqmpackethandler.h \
 			server/src/sqmpacketprocessor.h \
 			collective/proto/src/login.pb.h \
