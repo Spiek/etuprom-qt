@@ -35,6 +35,11 @@ void SQMPacketProcessor::newPacketReceived(DataPacket *packet)
         {
             emit this->userInformationsReceived(protocolPacket.userinformations());
         }
+
+        default :
+        {
+            break;
+        }
     }
 
     // after handling packet delete it
