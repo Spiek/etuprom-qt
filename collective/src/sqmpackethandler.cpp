@@ -179,7 +179,7 @@ void SQMPacketHandler::newTcpHost()
     QTcpSocket *socket = this->serverTcp.nextPendingConnection();
 
     // delete device on disconnect
-    this->connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
+    this->connect(socket, SIGNAL(disconnected()), this, SLOT(removeDevice()));
 
     // add the device to packet parser and remove the device if it's destroyed
     this->addDevice(socket, false);
