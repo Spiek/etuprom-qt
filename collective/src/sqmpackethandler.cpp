@@ -39,7 +39,7 @@ SQMPacketHandler::~SQMPacketHandler()
 /*
  * addDevice - add device for packet parsing
  */
-void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose, bool forgetondestroy)
+void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose)
 {
     // connect to PacketHanderss
     this->connect(device, SIGNAL(readyRead()), this, SLOT(dataHandler()));
@@ -50,9 +50,9 @@ void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose, bool for
         this->connect(device, SIGNAL(aboutToClose()), this, SLOT(removeDevice()));
     }
 
-    // if user want that the Packethandler forget the device on destroy,
+    // if user want that the Packethandler don't forget the device on close,
     // remove the device after device was destroyed
-    if(forgetondestroy){
+    else {
         this->connect(device, SIGNAL(destroyed()), this, SLOT(removeDevice()));
     }
 
@@ -85,7 +85,7 @@ void SQMPacketHandler::removeDevice(QIODevice *device)
     // delete properties
     ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
 
-    // inform the world about the disconnected device
+    // inform the world about the removed device
     emit this->deviceUsageChanged(ioPacketDevice, false);
 }
 
@@ -178,13 +178,11 @@ void SQMPacketHandler::newTcpHost()
 {
     QTcpSocket *socket = this->serverTcp.nextPendingConnection();
 
-    // remove socket by disconnect from packet parser and delete it
-    this->connect(socket, SIGNAL(disconnected()), this, SLOT(removeDevice()));
+    // delete device on disconnect
     this->connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
 
-    // add the device to packet parser without any delete option (we care for the deletion and removing from the packethandler)
-    // Note: we use this because there are some SIGNAL-emiting problems with the down-casted QTcpSocket (to QIODevice)
-    this->addDevice(socket, false, false);
+    // add the device to packet parser and remove the device if it's destroyed
+    this->addDevice(socket, false);
 }
 
 
@@ -199,6 +197,7 @@ void SQMPacketHandler::newTcpHost()
  */
 bool SQMPacketHandler::startTcpListening(quint16 port, QHostAddress address)
 {
+    // handle new connected tcp clients
     this->connect(&this->serverTcp, SIGNAL(newConnection()), this, SLOT(newTcpHost()));
     return this->serverTcp.listen(address, port);
 }

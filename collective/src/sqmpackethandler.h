@@ -56,7 +56,7 @@ class SQMPacketHandler : public QObject
         void deviceUsageChanged(QIODevice* device, bool used);
 
     public slots:
-        void addDevice(QIODevice* device, bool forgetonclose = true, bool forgetondestroy = true);
+        void addDevice(QIODevice* device, bool forgetonclose = true);
         void removeDevice(QIODevice *device = 0);
 
     public:
@@ -74,7 +74,7 @@ class SQMPacketHandler : public QObject
         static void sendDataPacket(QIODevice* device, std::string strDatatoSend);
 
     protected:
-        // protected con and decon so that no one (except the static create method) is able to construct an object!+
+        // protected con and decon so that no one (except the static create method) is able to construct an object!
         // set max length by default to 20MB
         SQMPacketHandler(quint32 maxDataLength = 20971520, QObject *parent = 0);
         ~SQMPacketHandler();
