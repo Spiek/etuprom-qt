@@ -1,7 +1,6 @@
 #include "global.h"
 
 // init static vars
-SQMPeerHandler* Global::peerHandler = 0;
 SQMPacketHandler* Global::packetHandler = 0;
 SQMPacketProcessor* Global::packetProcessor = 0;
 bool Global::init = false;
@@ -28,18 +27,17 @@ void Global::initialize()
         qFatal("Datenbank Verbindung NICHT erfolgreich!");
     }
 
-    // initialize peer handler, which handled the peers
-    Global::peerHandler = new SQMPeerHandler(Global::intListenPort, QHostAddress::Any, app);
-    Global::peerHandler->listen();
-
     // initialize packet handler, which handled the packet parsing
     SQMPacketHandler::create(app);
     Global::packetHandler = SQMPacketHandler::getInstance();
-    app->connect(Global::peerHandler, SIGNAL(newDevice(QIODevice*)), Global::packetHandler, SLOT(addDevice(QIODevice*)));
+
+    // and start tcp listening
+    Global::packetHandler->startTcpListening(Global::intListenPort);
 
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(app);
     app->connect(Global::packetHandler, SIGNAL(newPacketReceived(DataPacket*)), Global::packetProcessor, SLOT(newPacketReceived(DataPacket*)));
+    app->connect(Global::packetHandler, SIGNAL(deviceUsageChanged(QIODevice*,bool)), Global::packetProcessor, SLOT(clientStreamChanged(QIODevice*,bool)));
 
     // class was successfull initialized!
     Global::init = true;
