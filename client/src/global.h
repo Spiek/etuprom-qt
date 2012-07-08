@@ -8,7 +8,7 @@
 #define GLOBAL_H
 
 // Qt (core)
-#include <QtCore/QCoreApplication>
+#include <QtGui/QApplication>
 
 // Qt (network)
 #include <QtNetwork/QTcpSocket>

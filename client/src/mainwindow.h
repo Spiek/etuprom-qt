@@ -33,14 +33,18 @@ class MainWindow : public QMainWindow
 
     private:
         Ui::MainWindow *ui;
+        QMap<qint32, QTreeWidgetItem*> mapUserItems;
+        QMap<QString, QTreeWidgetItem*> mapGroups;
 
         // helper functions
         void requestUserInformations();
+        void setupUser(Protocol::User *user, QString contactGroup = "");
 
     private slots:
         // Socket slots
         void serverConnectionError(QAbstractSocket::SocketError socketError);
         void userInformationsReceived(Protocol::UserInformations userInformations);
+        void contactListUserAltered(Protocol::User user);
 };
 
 #endif // MAINWINDOW_H

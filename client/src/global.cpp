@@ -24,7 +24,7 @@ void Global::initialize()
     }
 
     // simplefy application instance
-    QCoreApplication* app = QCoreApplication::instance();
+    QCoreApplication* app = QApplication::instance();
 
     // init socket
     Global::socketServer = new QTcpSocket(app);
@@ -32,7 +32,7 @@ void Global::initialize()
     // init packet handler
     SQMPacketHandler::create(app);
     Global::packetHandler = SQMPacketHandler::getInstance();
-    Global::packetHandler->addDevice(Global::socketServer, false);
+    Global::packetHandler->addDevice(Global::socketServer, SQMPacketHandler::NeverForgetDevice);
 
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(Global::packetHandler);
