@@ -2,17 +2,20 @@ package Protocol;
 message Packet
 {
 	// Packettype
-	enum PacketType { LoginRequest = 1; LoginResponse = 2; UserInformations = 3; }
+	enum PacketType { LoginRequest = 1; LoginResponse = 2; UserInformations = 3; UserAltered = 4; }
 	
 	// types
 	required PacketType packetType = 1;
 	
-	// packet types: Login
+	// packet type: Login
 	optional LoginRequest requestLogin = 2;
 	optional LoginResponse responseLogin = 3;
 	
-	// packet types: User informations
+	// packet type: User informations
 	optional UserInformations userinformations = 4;
+	
+	// packet type: User change
+	optional User userAltered = 5;
 }
 
 // Sub Messages
