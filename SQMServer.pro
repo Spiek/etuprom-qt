@@ -25,7 +25,6 @@ SOURCES +=	server/src/main.cpp \
 HEADERS +=	\
 			collective/src/sqmpackethandler.h \
 			server/src/sqmpacketprocessor.h \
-			collective/proto/src/login.pb.h \
 			collective/proto/src/protocol.pb.h \
 			server/src/global.h
 

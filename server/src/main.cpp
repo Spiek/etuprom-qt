@@ -10,9 +10,6 @@
 // Qt (sql)
 #include <QtSql/QSqlDatabase>
 
-// C
-#include <stdlib.h>
-
 // own libs
 #include "global.h"
 
