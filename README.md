@@ -1,4 +1,4 @@
-simple-qt-messanger
+etuprom-qt
 ===================
 
-simple qt client server messanger with extended commentary
+Easy to use Protobuf Messanger Written in Qt
