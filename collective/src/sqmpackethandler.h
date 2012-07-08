@@ -55,11 +55,14 @@ class SQMPacketHandler : public QObject
         void newPacketReceived(DataPacket *packet);
         void deviceUsageChanged(QIODevice* device, bool used);
 
-    public slots:
-        void addDevice(QIODevice* device, bool forgetonclose = true);
-        void removeDevice(QIODevice *device = 0);
-
     public:
+        // device forget options for device addings
+        enum DeviceForgetOptions {
+            ForgetDeviceOnClose = 0,
+            ForgetDeviceOnDestroy = 2,
+            NeverForgetDevice = 3
+        };
+
         // start tcp listening
         bool startTcpListening(quint16 port, QHostAddress address = QHostAddress::Any);
 
@@ -72,6 +75,10 @@ class SQMPacketHandler : public QObject
         static void sendDataPacket(DataPacket* dpSrc, std::string strDatatoSend);
         static void sendDataPacket(QIODevice* device, QByteArray *baDatatoSend);
         static void sendDataPacket(QIODevice* device, std::string strDatatoSend);
+
+    public slots:
+        void addDevice(QIODevice* device, SQMPacketHandler::DeviceForgetOptions forgetoptions = SQMPacketHandler::ForgetDeviceOnDestroy);
+        void removeDevice(QIODevice *device = 0);
 
     protected:
         // protected con and decon so that no one (except the static create method) is able to construct an object!

@@ -39,20 +39,20 @@ SQMPacketHandler::~SQMPacketHandler()
 /*
  * addDevice - add device for packet parsing
  */
-void SQMPacketHandler::addDevice(QIODevice* device, bool forgetonclose)
+void SQMPacketHandler::addDevice(QIODevice* device, DeviceForgetOptions forgetoptions)
 {
     // connect to PacketHanderss
     this->connect(device, SIGNAL(readyRead()), this, SLOT(dataHandler()));
 
     // if user want that the Packethandler forget the device on close,
     // remove the device after device has closed
-    if(forgetonclose) {
+    if(forgetoptions == ForgetDeviceOnClose) {
         this->connect(device, SIGNAL(aboutToClose()), this, SLOT(removeDevice()));
     }
 
     // if user want that the Packethandler don't forget the device on close,
     // remove the device after device was destroyed
-    else {
+    else if(forgetoptions == ForgetDeviceOnDestroy) {
         this->connect(device, SIGNAL(destroyed()), this, SLOT(removeDevice()));
     }
 
@@ -180,9 +180,11 @@ void SQMPacketHandler::newTcpHost()
 
     // delete device on disconnect
     this->connect(socket, SIGNAL(disconnected()), this, SLOT(removeDevice()));
+    this->connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
 
     // add the device to packet parser and remove the device if it's destroyed
-    this->addDevice(socket, false);
+    // Note: we care about socket deletion!
+    this->addDevice(socket, NeverForgetDevice);
 }
 
 
