@@ -16,28 +16,43 @@ TEMPLATE = app
 
 # Sources
 SOURCES +=	server/src/main.cpp \
-			collective/src/sqmpackethandler.cpp \
-			server/src/sqmpacketprocessor.cpp \
-			collective/proto/src/protocol.pb.cc \
-			server/src/global.cpp
+                collective/src/sqmpackethandler.cpp \
+                server/src/sqmpacketprocessor.cpp \
+                collective/proto/src/protocol.pb.cc \
+                server/src/global.cpp
 
 # Headers
 HEADERS +=	\
-			collective/src/sqmpackethandler.h \
-			server/src/sqmpacketprocessor.h \
-			collective/proto/src/protocol.pb.h \
-			server/src/global.h
+                collective/src/sqmpackethandler.h \
+                server/src/sqmpacketprocessor.h \
+                collective/proto/src/protocol.pb.h \
+                server/src/global.h
 
-# include pathes
+# include path
 INCLUDEPATH += "include/"
-INCLUDEPATH += "collective/proto/src/"
 
-# remove all existing compiled .proto files and recompile all .proto files
+
+#
+# Protobuf config section
+#
+
+# set some protobuf settings
+INCLUDEPATH += "collective/proto/src/"
 Protosrcdir = $$_PRO_FILE_PWD_/collective/proto
 Prototargetdir = $$Protosrcdir/src
-win32:system("del /q \"$$Prototargetdir/\"")
-linux:system("rm -f $$Prototargetdir/*")
+
+# remove all existing compiled .proto files
+win32 {
+    system("del \"$$Prototargetdir\"\\*.h")
+    system("del \"$$Prototargetdir\"\\*.cc")
+}
+linux {
+    system("rm -f $$Prototargetdir/*.h")
+    system("rm -f $$Prototargetdir/*.cc")
+}
+
+# ...and recompile them
 system(protoc -I=$$Protosrcdir --cpp_out=$$Prototargetdir $$Protosrcdir/*.proto)
 
-# add protobuf lib (we can't do that in mkspecs because the protobuf lib has to be set as last lib)
+# link against protobuf lib (we can't do that in mkspecs because the protobuf lib has to be set as last lib)
 LIBS += -lprotobuf
