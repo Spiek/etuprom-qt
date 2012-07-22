@@ -34,7 +34,7 @@ QSqlQuery DatabaseHelper::getUserByIdUserNameAndPw(QString strUsername, QString 
 bool DatabaseHelper::updateUserOnlineState(quint32 userId, bool online)
 {
     // build query
-    QString strUpdateString = QString("online = \"%1\"").arg((int)online);
+    QString strUpdateString = QString("online = %1").arg((int)online);
     return DatabaseHelper::buildUpdateUserQuery(userId, strUpdateString);
 }
 
@@ -107,7 +107,7 @@ bool DatabaseHelper::buildUpdateUserQuery(quint32 userId, QString strFields)
     QString strQuery = QString(
                 "UPDATE "
                 "	users SET %1 "
-                "WHERE id = %2 "
+                "WHERE id = %2;"
     ).arg(strFields).arg(userId);
 
     // exec query and catch return value and return it

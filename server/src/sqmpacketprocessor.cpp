@@ -104,7 +104,7 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
     // set user informations
     userInformation->mutable_user()->MergeFrom(*user);
 
-    // select all contacts which are in the contactlist of connection user
+    // select all contacts which are in the contactlist of connected user
     query = DatabaseHelper::getContactsByUserId(user->id());
 
     // ... and add them to the protobuf contactlist
