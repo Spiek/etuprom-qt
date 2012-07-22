@@ -38,7 +38,7 @@ class SQMPacketProcessor : public QObject
 
     private:
         // protocol handler methods
-        void handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket, Protocol::LoginRequest *login);
+        void handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket);
 
         // protocol helper methods
         void userChanged(QIODevice *device);

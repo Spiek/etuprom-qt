@@ -24,25 +24,14 @@ SQMPacketProcessor::~SQMPacketProcessor()
 
 void SQMPacketProcessor::newPacketReceived(DataPacket *packet)
 {
-    // parse packet
+    // deserialize protobuf packet
     Protocol::Packet protocolPacket;
     protocolPacket.ParseFromArray(packet->baRawPacketData->constData(), packet->intPacktLength);
     Protocol::Packet_PacketType packetType = protocolPacket.packettype();
 
-    // analyse type
-    switch(packetType)
-    {
-        // login packet
-        case Protocol::Packet_PacketType_LoginRequest :
-        {
-            Protocol::LoginRequest loginRequest = protocolPacket.requestlogin();
-            this->handleLogin(packet, &protocolPacket, &loginRequest);
-            break;
-        }
-        default :
-        {
-            break;
-        }
+    // handle packet type
+    if(packetType == Protocol::Packet_PacketType_LoginRequest) {
+        this->handleLogin(packet, &protocolPacket);
     }
 
     // after handling packet delete it
@@ -54,8 +43,6 @@ void SQMPacketProcessor::clientStreamChanged(QIODevice *device, bool used)
     // if we have a disconnect and user was logged in,
     // remove user from cached user list and update on/offline state in db
     if(!used && this->getConnectedUser(device)) {
-        // update user in database
-        this->dbUpdateUserOnOfflineState(this->getConnectedUser(device)->id(), false);
         this->removeUser(device);
     }
 }
@@ -66,16 +53,17 @@ void SQMPacketProcessor::clientStreamChanged(QIODevice *device, bool used)
 //  Protocol handler methods
 //
 
-void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket, Protocol::LoginRequest *login)
+void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket)
 {
     // simplefy login packet values
+    Protocol::LoginRequest* login = protocolPacket->mutable_requestlogin();
     QString username = QString::fromStdString(login->username()).toAscii();
     QString password  = QString::fromStdString(login->password()).toAscii();
 
     // search for user
     QSqlQuery query = this->dbLogin(username, password);
 
-    // create default response packet
+    // create response protobuf packet and fill it with default values
     Protocol::Packet packetResponse;
     packetResponse.set_packettype(Protocol::Packet_PacketType_LoginResponse);
     Protocol::LoginResponse *loginResponse = packetResponse.mutable_responselogin();
@@ -83,11 +71,11 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
     // login was success
     Protocol::User *user = 0;
     if(query.next()) {
-        // create new user struct
+        // create new user
         user = this->setUserfromQuery(&query);
         this->addUser(dataPacket->ioPacketDevice, user);
 
-        // login is succcessfull
+        // login was succcessfull
         loginResponse->set_type(Protocol::LoginResponse_Type_Success);
     }
 
@@ -108,7 +96,7 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
     // send UserInformations
     //
 
-    // build UserInformations protocol packet
+    // build UserInformations protoful protocol packet and fill it with default values
     Protocol::Packet packetUserInformations;
     packetUserInformations.set_packettype(Protocol::Packet_PacketType_UserInformations);
     Protocol::UserInformations *userInformation = packetUserInformations.mutable_userinformations();
@@ -211,7 +199,7 @@ QSqlQuery SQMPacketProcessor::dbLogin(QString strUserName, QString strPassword)
     QString strQuery = QString(
                 "SELECT "
                 "	id, "
-
+                "   username,"
                 "	state, "
                 "	online, "
                 "	visible "
@@ -303,9 +291,6 @@ bool SQMPacketProcessor::dbUpdateUserOnOfflineState(qint32 intId, bool online)
     // exec query and catch return value
     bool result = QSqlQuery(strQuery, QSqlDatabase::database()).exec();
 
-    // update user
-    this->userChanged(intId);
-
     // return result
     return result;
 }
@@ -324,7 +309,8 @@ void SQMPacketProcessor::addUser(QIODevice *device, Protocol::User *user)
     // add to userid -> QPair(device, user) map
     this->mapIdUser.insert(user->id(), QPair<QIODevice*, Protocol::User*>(device, user));
 
-    // update user in database
+    // update the user (in database and inform all users which belongs to the user about users state change)
+    this->userChanged(user->id());
     this->dbUpdateUserOnOfflineState(user->id(), true);
 }
 
@@ -343,6 +329,10 @@ void SQMPacketProcessor::removeUser(Protocol::User *user)
     if(!user || !this->mapIdUser.contains(user->id())) {
         return;
     }
+
+    // update the user (in database and inform all users which belongs to the user about users state change)
+    this->userChanged(user->id());
+    this->dbUpdateUserOnOfflineState(user->id(), false);
 
     // remove from userid -> QPair(device, user) map
     QPair<QIODevice*, Protocol::User*> pairValueUser = this->mapIdUser.take(user->id());
