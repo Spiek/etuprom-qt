@@ -8,7 +8,7 @@
 
 SQMPacketProcessor::SQMPacketProcessor(QObject *parent) : QObject(parent)
 {
-    this->connect(Global::packetHandler, SIGNAL(deviceUsageChanged(QIODevice*,bool)), this, SLOT(clientStreamChanged(QIODevice*,bool)));
+    this->connect(Global::packetHandler, SIGNAL(deviceUsageChanged(QIODevice*,bool)), this, SLOT(clientUsageChanged(QIODevice*,bool)));
 }
 
 SQMPacketProcessor::~SQMPacketProcessor()
@@ -38,7 +38,7 @@ void SQMPacketProcessor::newPacketReceived(DataPacket *packet)
     delete packet;
 }
 
-void SQMPacketProcessor::clientStreamChanged(QIODevice *device, bool used)
+void SQMPacketProcessor::clientUsageChanged(QIODevice *device, bool used)
 {
     // if we have a disconnect and user was logged in,
     // remove user from cached user list and update on/offline state in db

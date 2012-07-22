@@ -33,7 +33,7 @@ class SQMPacketProcessor : public QObject
 
     public slots:
         void newPacketReceived(DataPacket *packet);
-        void clientStreamChanged(QIODevice* device, bool used);
+        void clientUsageChanged(QIODevice* device, bool used);
 
     private:
         // protocol handler methods
