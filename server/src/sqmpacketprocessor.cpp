@@ -8,7 +8,7 @@
 
 SQMPacketProcessor::SQMPacketProcessor(QObject *parent) : QObject(parent)
 {
-    this->connect(Global::packetHandler, SIGNAL(deviceUsageChanged(QIODevice*,bool)), this, SLOT(clientUsageChanged(QIODevice*,bool)));
+
 }
 
 SQMPacketProcessor::~SQMPacketProcessor()
