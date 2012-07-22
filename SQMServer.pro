@@ -19,14 +19,16 @@ SOURCES +=	server/src/main.cpp \
                 collective/src/sqmpackethandler.cpp \
                 server/src/sqmpacketprocessor.cpp \
                 collective/proto/src/protocol.pb.cc \
-                server/src/global.cpp
+                server/src/global.cpp \
+                server/src/databasehelper.cpp
 
 # Headers
 HEADERS +=	\
                 collective/src/sqmpackethandler.h \
                 server/src/sqmpacketprocessor.h \
                 collective/proto/src/protocol.pb.h \
-                server/src/global.h
+                server/src/global.h \
+                server/src/databasehelper.h
 
 # include path
 INCLUDEPATH += "include/"

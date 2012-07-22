@@ -18,10 +18,8 @@ void Global::initialize()
     // simplefy application instance
     QCoreApplication* app = QCoreApplication::instance();
 
-    // init database connection
-    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");
-    db.setDatabaseName("sqm");
-    if(db.open()) {
+    // init database helper
+    if(DatabaseHelper::initialize("QODBC", "sqm")) {
         printf("Datenbank Verbindung erfolgreich!");
     } else {
         qFatal("Datenbank Verbindung NICHT erfolgreich!");

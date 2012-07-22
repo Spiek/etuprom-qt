@@ -7,6 +7,7 @@
 // own libs
 #include "SQMPacketHandler"
 #include "sqmpacketprocessor.h"
+#include "databasehelper.h"
 
 class Global
 {

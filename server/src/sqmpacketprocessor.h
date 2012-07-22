@@ -11,7 +11,6 @@ class SQMPacketProcessor;
 #include <QtCore/QPair>
 
 // Qt (sql)
-#include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQuery>
 
 // own libs
@@ -46,15 +45,6 @@ class SQMPacketProcessor : public QObject
 
         // database helper methods
         Protocol::User* setUserfromQuery(QSqlQuery *query,  Protocol::User* user = 0);
-
-        // database SELECT access methods
-        QSqlQuery dbLogin(QString strUserName, QString strPassword);
-        QSqlQuery dbGetContactList(qint32 intId);
-        QSqlQuery dbGetLoggedInUsersofUserContactList(qint32 intId);
-        QSqlQuery dbGetUser(qint32 intId);
-
-        // database EXEC access methods
-        bool dbUpdateUserOnOfflineState(qint32 intId, bool online);
 
         // user managment helper methods
         void addUser(QIODevice *device, Protocol::User *user);
