@@ -310,8 +310,8 @@ void SQMPacketProcessor::addUser(QIODevice *device, Protocol::User *user)
     this->mapIdUser.insert(user->id(), QPair<QIODevice*, Protocol::User*>(device, user));
 
     // update the user (in database and inform all users which belongs to the user about users state change)
-    this->userChanged(user->id());
     this->dbUpdateUserOnOfflineState(user->id(), true);
+    this->userChanged(user->id());
 }
 
 void SQMPacketProcessor::removeUser(QIODevice *device)
@@ -331,8 +331,8 @@ void SQMPacketProcessor::removeUser(Protocol::User *user)
     }
 
     // update the user (in database and inform all users which belongs to the user about users state change)
-    this->userChanged(user->id());
     this->dbUpdateUserOnOfflineState(user->id(), false);
+    this->userChanged(user->id());
 
     // remove from userid -> QPair(device, user) map
     QPair<QIODevice*, Protocol::User*> pairValueUser = this->mapIdUser.take(user->id());
