@@ -11,7 +11,8 @@ class SQMPacketProcessor;
 #include <QtCore/QPair>
 
 // own libs
-#include "global.h"
+#include "SQMPacketHandler"
+#include "usermanager.h"
 
 // protobuf libs
 #include "protocol.pb.h"
