@@ -10,9 +10,6 @@ class SQMPacketProcessor;
 #include <QtCore/QIODevice>
 #include <QtCore/QPair>
 
-// Qt (sql)
-#include <QtSql/QSqlQuery>
-
 // own libs
 #include "global.h"
 
@@ -38,22 +35,6 @@ class SQMPacketProcessor : public QObject
     private:
         // protocol handler methods
         void handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket);
-
-        // protocol helper methods
-        void userChanged(QIODevice *device);
-        void userChanged(qint32 userid);
-
-        // database helper methods
-        Protocol::User* setUserfromQuery(QSqlQuery *query,  Protocol::User* user = 0);
-
-        // user managment helper methods
-        void addUser(QIODevice *device, Protocol::User *user);
-        void removeUser(Protocol::User *user);
-        void removeUser(QIODevice *device);
-        Protocol::User* refreshUser(Protocol::User *user);
-        Protocol::User* getConnectedUser(QIODevice *device);
-        Protocol::User* getConnectedUser(qint32 userid);
-        QIODevice* getConnectedDevice(qint32 userid);
 };
 
 #endif // SQMPACKETPROCESSOR_H

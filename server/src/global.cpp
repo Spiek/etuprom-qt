@@ -29,6 +29,9 @@ void Global::initialize()
     SQMPacketHandler::create(app);
     Global::packetHandler = SQMPacketHandler::getInstance();
 
+    // initialize Usermanager
+    Usermanager::create(app);
+
     // and start tcp listening
     Global::packetHandler->startTcpListening(Global::intListenPort);
 

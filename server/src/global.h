@@ -8,6 +8,7 @@
 #include "SQMPacketHandler"
 #include "sqmpacketprocessor.h"
 #include "databasehelper.h"
+#include "usermanager.h"
 
 class Global
 {
