@@ -13,7 +13,6 @@
 class Global
 {
     public:
-        static SQMPacketHandler *packetHandler;
         static SQMPacketProcessor *packetProcessor;
 
         static quint16 intListenPort;

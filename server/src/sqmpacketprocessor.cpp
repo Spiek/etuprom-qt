@@ -84,8 +84,11 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
         loginResponse->set_type(Protocol::LoginResponse_Type_LoginIncorect);
     }
 
+    // simplefy packet handler
+    SQMPacketHandler *packethandler = SQMPacketHandler::getInstance();
+
     // send login response packet
-    Global::packetHandler->sendDataPacket(dataPacket->ioPacketDevice, packetResponse.SerializeAsString());
+    packethandler->sendDataPacket(dataPacket->ioPacketDevice, packetResponse.SerializeAsString());
 
     // exit here if login was not correct
     if(!user) {
@@ -115,5 +118,5 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
     }
 
     // send userinformation packet
-    Global::packetHandler->sendDataPacket(dataPacket->ioPacketDevice, packetUserInformations.SerializeAsString());
+    packethandler->sendDataPacket(dataPacket->ioPacketDevice, packetUserInformations.SerializeAsString());
 }

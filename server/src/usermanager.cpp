@@ -40,7 +40,7 @@ void Usermanager::userChanged(QIODevice *device)
         QIODevice *device = this->getConnectedDevice(userOfContactList->id());
 
         // inform user about the change
-        Global::packetHandler->sendDataPacket(device, strSerialzedPacket);
+        SQMPacketHandler::getInstance()->sendDataPacket(device, strSerialzedPacket);
     }
 }
 

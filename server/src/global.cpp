@@ -1,7 +1,6 @@
 #include "global.h"
 
 // init static vars
-SQMPacketHandler* Global::packetHandler = 0;
 SQMPacketProcessor* Global::packetProcessor = 0;
 bool Global::init = false;
 
@@ -27,18 +26,18 @@ void Global::initialize()
 
     // initialize packet handler, which handled the packet parsing
     SQMPacketHandler::create(app);
-    Global::packetHandler = SQMPacketHandler::getInstance();
+    SQMPacketHandler *packetHandler = SQMPacketHandler::getInstance();
 
     // initialize Usermanager
     Usermanager::create(app);
 
     // and start tcp listening
-    Global::packetHandler->startTcpListening(Global::intListenPort);
+    packetHandler->startTcpListening(Global::intListenPort);
 
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(app);
-    app->connect(Global::packetHandler, SIGNAL(newPacketReceived(DataPacket*)), Global::packetProcessor, SLOT(newPacketReceived(DataPacket*)));
-    app->connect(Global::packetHandler, SIGNAL(deviceUsageChanged(QIODevice*,bool)), Global::packetProcessor, SLOT(clientUsageChanged(QIODevice*,bool)));
+    app->connect(packetHandler, SIGNAL(newPacketReceived(DataPacket*)), Global::packetProcessor, SLOT(newPacketReceived(DataPacket*)));
+    app->connect(packetHandler, SIGNAL(deviceUsageChanged(QIODevice*,bool)), Global::packetProcessor, SLOT(clientUsageChanged(QIODevice*,bool)));
 
     // class was successfull initialized!
     Global::init = true;
