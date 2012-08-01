@@ -3,10 +3,15 @@
 
 // Qt (core)
 #include <QtCore/QString>
+#include <QtCore/QMap>
+#include <QtCore/QVariant>
 
 // Qt (sql)
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlQuery>
+
+// protobuf libs
+#include "protocol.pb.h"
 
 class DatabaseHelper
 {
@@ -24,6 +29,8 @@ class DatabaseHelper
         static QSqlQuery getContactsByUserId(qint32 userId);
         static QSqlQuery getOnlineContactsByUserId(qint32 intId);
 
+        // messages database access methods
+        static bool createNewMessage(qint32 userSender, QString strMessage, google::protobuf::RepeatedField<int> userRecivers);
 
     private:
         static QSqlQuery buildUserQuery(QString strCondition);

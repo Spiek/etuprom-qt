@@ -32,6 +32,8 @@ class Usermanager : public QObject
         void addUser(QIODevice *device, Protocol::User *user);
         void removeUser(Protocol::User *user);
         void removeUser(QIODevice *device);
+        bool isLoggedIn(QIODevice *device);
+        bool isLoggedIn(qint32 userID);
         Protocol::User* refreshUser(Protocol::User *user);
         Protocol::User* getConnectedUser(QIODevice *device);
         Protocol::User* getConnectedUser(qint32 userid);

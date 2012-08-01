@@ -2,7 +2,7 @@ package Protocol;
 message Packet
 {
 	// Packettype
-	enum PacketType { LoginRequest = 1; LoginResponse = 2; UserInformations = 3; UserAltered = 4; }
+	enum PacketType { LoginRequest = 1; LoginResponse = 2; UserInformations = 3; UserAltered = 4; UserMessage = 5; }
 	
 	// types
 	required PacketType packetType = 1;
@@ -16,6 +16,9 @@ message Packet
 	
 	// packet type: User change
 	optional User userAltered = 5;
+	
+	// packet type: UserMessage
+	optional UserMessage userMessage = 6;
 }
 
 // Sub Messages
@@ -60,4 +63,11 @@ message User
 	required int32 state = 3;
 	required bool online = 4;
 	required bool visible = 5;
+}
+
+message UserMessage
+{
+	// message data
+	repeated int32 receiverUserIds = 1;
+	required string messageText = 2;
 }

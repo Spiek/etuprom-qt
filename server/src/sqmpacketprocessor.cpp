@@ -29,9 +29,17 @@ void SQMPacketProcessor::newPacketReceived(DataPacket *packet)
     protocolPacket.ParseFromArray(packet->baRawPacketData->constData(), packet->intPacktLength);
     Protocol::Packet_PacketType packetType = protocolPacket.packettype();
 
-    // handle packet type
+    // BEFORE LOGIN: handle LoginRequest packet
     if(packetType == Protocol::Packet_PacketType_LoginRequest) {
         this->handleLogin(packet, &protocolPacket);
+    }
+
+    // AFTER LOGIN
+    else if(Usermanager::getInstance()->isLoggedIn(packet->ioPacketDevice)) {
+        // handle messages
+        if(packetType == Protocol::Packet_PacketType_UserMessage) {
+            this->handleUserMessage(packet, &protocolPacket);
+        }
     }
 
     // after handling packet delete it
@@ -119,4 +127,27 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
 
     // send userinformation packet
     packethandler->sendDataPacket(dataPacket->ioPacketDevice, packetUserInformations.SerializeAsString());
+}
+
+void SQMPacketProcessor::handleUserMessage(DataPacket *dataPacket, Protocol::Packet *protocolPacket)
+{
+    // simplefy some values
+    Usermanager *userManager = Usermanager::getInstance();
+    Protocol::User *user = userManager->getConnectedUser(dataPacket->ioPacketDevice);
+    Protocol::UserMessage *userMessage = protocolPacket->mutable_usermessage();
+    QString strMessage = QString::fromStdString(userMessage->messagetext());
+
+    // loop all users who should receive the message
+    for(int i = 0; i < userMessage->receiveruserids_size(); i++) {
+        qint32 intUserId = userMessage->receiveruserids(i);
+
+        // if user is online, send message directly to him
+        if(userManager->isLoggedIn(intUserId)) {
+            QIODevice *deviceUserReceiver = userManager->getConnectedDevice(intUserId);
+            SQMPacketHandler::getInstance()->sendDataPacket(deviceUserReceiver, protocolPacket->SerializeAsString());
+        }
+
+        // save in database
+        DatabaseHelper::createNewMessage((qint32)user->id(), strMessage, userMessage->receiveruserids());
+    }
 }

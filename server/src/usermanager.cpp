@@ -116,6 +116,16 @@ void Usermanager::removeUser(Protocol::User *user)
     delete pairValueUser.second;
 }
 
+bool Usermanager::isLoggedIn(QIODevice *device)
+{
+    return (device ? this->mapSocketUser.contains(device) : false);
+}
+
+bool Usermanager::isLoggedIn(qint32 userID)
+{
+    return this->mapIdUser.contains(userID);
+}
+
 Protocol::User* Usermanager::refreshUser(Protocol::User *user)
 {
     QSqlQuery queryUserRefresh = DatabaseHelper::getUserById(user->id());
