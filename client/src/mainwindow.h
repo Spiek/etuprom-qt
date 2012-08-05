@@ -17,6 +17,7 @@
 
 // own (gui)
 #include "loginform.h"
+#include "chatbox.h"
 
 
 namespace Ui {
@@ -33,6 +34,7 @@ class MainWindow : public QMainWindow
 
     private:
         Ui::MainWindow *ui;
+        QMap<qint32, Protocol::User*> mapIdUser;
         QMap<qint32, QTreeWidgetItem*> mapUserItems;
         QMap<QString, QTreeWidgetItem*> mapGroups;
 
@@ -40,11 +42,17 @@ class MainWindow : public QMainWindow
         void requestUserInformations();
         void setupUser(Protocol::User *user, QString contactGroup = "");
 
+        // designer members
+        ChatBox chatBox;
+
     private slots:
         // Socket slots
         void serverConnectionError(QAbstractSocket::SocketError socketError);
         void userInformationsReceived(Protocol::UserInformations userInformations);
         void contactListUserAltered(Protocol::User user);
+
+        // GUI slots
+        void onUserClicked(QTreeWidgetItem* widgetClicked, int column);
 };
 
 #endif // MAINWINDOW_H

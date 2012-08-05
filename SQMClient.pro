@@ -5,32 +5,40 @@
 #
 
 # Qt Settings
-QT       += core gui network
+QT       += core gui network webkit
 
 # Compile Settings
 TARGET = SQMClient
 TEMPLATE = app
 
-# Sources
-SOURCES +=  client/src/main.cpp\
-            client/src/mainwindow.cpp \
-            collective/src/sqmpackethandler.cpp \
-            client/src/sqmpacketprocessor.cpp \
-            client/src/loginform.cpp \
-            client/src/global.cpp \
-            collective/proto/src/protocol.pb.cc
+# Sources (collective)
+SOURCES +=  collective/src/sqmpackethandler.cpp \
+			collective/proto/src/protocol.pb.cc
 
-# Headers
+# Sources (client)
+SOURCES +=  client/src/main.cpp\
+			client/src/mainwindow.cpp \
+			client/src/sqmpacketprocessor.cpp \
+			client/src/loginform.cpp \
+			client/src/global.cpp \
+			client/src/chatbox.cpp
+
+# Headers (collective)
+HEADERS  += collective/src/sqmpackethandler.h \
+			collective/proto/src/protocol.pb.h
+
+# Headers (client)
 HEADERS  += client/src/mainwindow.h  \
-            collective/src/sqmpackethandler.h \
-            client/src/sqmpacketprocessor.h \
-            client/src/loginform.h \
-            client/src/global.h \
-            collective/proto/src/protocol.pb.h
+			client/src/sqmpacketprocessor.h \
+			client/src/loginform.h \
+			client/src/global.h \
+			client/src/chatbox.h
 
 # Forms
 FORMS    += client/ui/mainwindow.ui \
-            client/ui/loginform.ui
+			client/ui/loginform.ui \
+			client/ui/chatTab.ui \
+			client/ui/chatbox.ui
 
 # Ressource files
 RESOURCES += client/res/global.qrc

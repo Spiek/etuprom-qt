@@ -22,6 +22,9 @@ MainWindow::MainWindow(QWidget *parent) :
     // signal --> slot connections (PacketProcessor)
     this->connect(Global::packetProcessor, SIGNAL(userInformationsReceived(Protocol::UserInformations)), this, SLOT(userInformationsReceived(Protocol::UserInformations)));
     this->connect(Global::packetProcessor, SIGNAL(userAltered(Protocol::User)), this, SLOT(contactListUserAltered(Protocol::User)));
+
+    // handle double click event of new user
+    this->connect(this->ui->treeWidgetContactList, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onUserClicked(QTreeWidgetItem*,int)));
 }
 
 MainWindow::~MainWindow()
@@ -49,8 +52,12 @@ void MainWindow::userInformationsReceived(Protocol::UserInformations userInforma
         // simplefy contact
         Protocol::Contact *contact = userInformations.mutable_contact(i);
 
+        // setup user
         this->setupUser(contact->mutable_user(), QString::fromStdString(contact->group()));
     }
+
+    // expand all groups
+    this->ui->treeWidgetContactList->expandAll();
 }
 
 void MainWindow::contactListUserAltered(Protocol::User user)
@@ -104,13 +111,31 @@ void MainWindow::setupUser(Protocol::User *user, QString contactGroup)
         QFont font = treeWidgetUser->font(0);
         font.setPointSize(12);
         treeWidgetUser->setFont(0, font);
+
+        // save user
+        this->mapIdUser.insert(userId, new Protocol::User(*user));
     }
 
     // set contact data
     treeWidgetUser->setData(0, Qt::UserRole, userId);
     treeWidgetUser->setText(0, userUsername + strIconFilename);
     treeWidgetUser->setIcon(0, iconContact);
-
-    qDebug("%i ", userId);
 }
 
+void MainWindow::onUserClicked(QTreeWidgetItem *widgetClicked, int column)
+{
+    // get userid of clicked widget item
+    qint32 userId = widgetClicked->data(0, Qt::UserRole).toInt();
+
+    // exit if no UserRole data was set
+    if(!userId) {
+        return;
+    }
+
+    // get user
+    Protocol::User *user = this->mapIdUser.value(userId);
+
+    // add user to chatBox and show the chatBox
+    this->chatBox.addNewUser(user);
+    this->chatBox.show();
+}
