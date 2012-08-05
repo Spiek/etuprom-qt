@@ -68,6 +68,9 @@ message User
 message UserMessage
 {
 	// message data
-	repeated int32 receiverUserIds = 1;
+	required int32 receiverUserId = 1;
 	required string messageText = 2;
+	
+	// sender data
+	optional int32 senderUserId = 3;
 }

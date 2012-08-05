@@ -30,7 +30,7 @@ class DatabaseHelper
         static QSqlQuery getOnlineContactsByUserId(qint32 intId);
 
         // messages database access methods
-        static bool createNewMessage(qint32 userSender, QString strMessage, google::protobuf::RepeatedField<int> userRecivers);
+        static bool createNewUserMessage(qint32 userSenderId, qint32 userReceiverId, QString strMessage);
 
     private:
         static QSqlQuery buildUserQuery(QString strCondition);

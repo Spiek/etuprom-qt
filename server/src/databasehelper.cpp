@@ -61,33 +61,21 @@ QSqlQuery DatabaseHelper::getOnlineContactsByUserId(qint32 userId)
 /*
  * messages database access methods
  */
-bool DatabaseHelper::createNewMessage(qint32 userSender, QString strMessage, google::protobuf::RepeatedField<int> userRecivers)
+bool DatabaseHelper::createNewUserMessage(qint32 userSenderId, qint32 userReceiverId, QString strMessage)
 {
-    // exit if we have no userReceivers
-    if(userRecivers.size() == 0) {
+    // exit if something is wrong
+    if(userSenderId == 0 || userReceiverId == 0 || strMessage.isEmpty()) {
         return false;
     }
 
-    // add message to message table, and get the id of the message
+    // build message query
     QString strQueryMessage = QString(
-                "INSERT INTO usermessage(user_id, message, created) "
-                "VALUES(%1, '%2', NOW());"
-    ).arg(userSender).arg(strMessage);
-    QSqlQuery queryMessage(strQueryMessage, QSqlDatabase::database());
-    queryMessage.exec();
-    qint32 intMessageId = queryMessage.lastInsertId().toInt();
+                "INSERT INTO usermessage(sender_user_id, receiver_user_id, message, created) "
+                "VALUES(%1, %2, '%3', NOW());"
+    ).arg(userSenderId).arg(userReceiverId).arg(strMessage);
 
-    // loop all recivers and build usermessage_receivers query
-    QString strQueryMessageReceiver("INSERT INTO usermessage_receivers(message_id, user_id_receiver) VALUES");
-    foreach(int useridReceiver, userRecivers) {
-        strQueryMessageReceiver += QString("(%1, %2),").arg(intMessageId).arg(useridReceiver);
-    }
-
-    // replace last , with ;
-    strQueryMessageReceiver.replace(strQueryMessageReceiver.length() - 1, 1, ";");
-
-    // insert user recivers
-    return QSqlQuery(strQueryMessageReceiver, QSqlDatabase::database()).exec();
+    // create new user message
+    return QSqlQuery(strQueryMessage, QSqlDatabase::database()).exec();
 }
 
 

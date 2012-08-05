@@ -131,23 +131,25 @@ void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *p
 
 void SQMPacketProcessor::handleUserMessage(DataPacket *dataPacket, Protocol::Packet *protocolPacket)
 {
-    // simplefy some values
+    // simplefy global values
     Usermanager *userManager = Usermanager::getInstance();
     Protocol::User *user = userManager->getConnectedUser(dataPacket->ioPacketDevice);
+    qint32 intSenderUserId = user->id();
+
+    // simplefy UserMessage values
     Protocol::UserMessage *userMessage = protocolPacket->mutable_usermessage();
     QString strMessage = QString::fromStdString(userMessage->messagetext());
+    qint32 intReceiverUserId = userMessage->receiveruserid();
 
-    // loop all users who should receive the message
-    for(int i = 0; i < userMessage->receiveruserids_size(); i++) {
-        qint32 intUserId = userMessage->receiveruserids(i);
+    // set sender user_id
+    userMessage->set_senderuserid(intSenderUserId);
 
-        // if user is online, send message directly to him
-        if(userManager->isLoggedIn(intUserId)) {
-            QIODevice *deviceUserReceiver = userManager->getConnectedDevice(intUserId);
-            SQMPacketHandler::getInstance()->sendDataPacket(deviceUserReceiver, protocolPacket->SerializeAsString());
-        }
-
-        // save in database
-        DatabaseHelper::createNewMessage((qint32)user->id(), strMessage, userMessage->receiveruserids());
+    // send the message directly to user if user is online
+    if(userManager->isLoggedIn(intReceiverUserId)) {
+        QIODevice *deviceUserReceiver = userManager->getConnectedDevice(intReceiverUserId);
+        SQMPacketHandler::getInstance()->sendDataPacket(deviceUserReceiver, protocolPacket->SerializeAsString());
     }
+
+    // save message in database
+    DatabaseHelper::createNewUserMessage(intSenderUserId, intReceiverUserId, strMessage);
 }
