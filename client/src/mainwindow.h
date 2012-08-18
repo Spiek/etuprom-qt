@@ -53,6 +53,9 @@ class MainWindow : public QMainWindow
 
         // GUI slots
         void onUserClicked(QTreeWidgetItem* widgetClicked, int column);
+
+        // Protocol slots
+        void userSendMessage(int userId, QString strMessage);
 };
 
 #endif // MAINWINDOW_H
