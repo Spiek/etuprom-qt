@@ -2,7 +2,7 @@
 #define ELEAPH_H
 
 // eleaph interface
-#include "SQMPacketHandler"
+#include "ieleaph.h"
 
 class Eleaph : public IEleaph
 {
