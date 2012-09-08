@@ -13,10 +13,10 @@
 //
 
 /*
- * SQMPacketHandler - construct the PacketHandler
- *                    NOTE: protected constructor for SINGELTON construction
+ * IEleaph - construct the PacketHandler
+ *           NOTE: protected constructor for SINGELTON construction
  */
-SQMPacketHandler::SQMPacketHandler(quint32 maxDataLength, QObject *parent) : QObject(parent)
+IEleaph::IEleaph(quint32 maxDataLength, QObject *parent) : QObject(parent)
 {
     // save construct vars
     this->intMaxDataLength = maxDataLength;
@@ -25,7 +25,7 @@ SQMPacketHandler::SQMPacketHandler(quint32 maxDataLength, QObject *parent) : QOb
 /*
  * ~SQMPacketHandler - deconstructor
  */
-SQMPacketHandler::~SQMPacketHandler()
+IEleaph::~IEleaph()
 {
     // cleanup
 }
@@ -39,7 +39,7 @@ SQMPacketHandler::~SQMPacketHandler()
 /*
  * addDevice - add device for packet parsing
  */
-void SQMPacketHandler::addDevice(QIODevice* device, DeviceForgetOptions forgetoptions)
+void IEleaph::addDevice(QIODevice* device, DeviceForgetOptions forgetoptions)
 {
     // connect to PacketHanderss
     this->connect(device, SIGNAL(readyRead()), this, SLOT(dataHandler()));
@@ -56,43 +56,41 @@ void SQMPacketHandler::addDevice(QIODevice* device, DeviceForgetOptions forgetop
         this->connect(device, SIGNAL(destroyed()), this, SLOT(removeDevice()));
     }
 
-    // inform the world about the new connected device
-    emit this->deviceUsageChanged(device, true);
+    // call user implementation
+    this->deviceAdded(device);
 }
 
 /*
  * removeDevice - remove device from packet parsing
  */
-void SQMPacketHandler::removeDevice(QIODevice *device)
+void IEleaph::removeDevice(QIODevice *device)
 {
-    // aquire device by param or as sender, if not possible, exit
+    // aquire device by param or by casting the sender, if not possible, exit
     QIODevice *ioPacketDevice = !device ? qobject_cast<QIODevice*>(this->sender()) : device;
     if(!ioPacketDevice) {
         return;
     }
 
-    // remove all connected signals device --> this and this --> device
+    // remove all connection of device (device --> this) and (this --> device)
     ioPacketDevice->disconnect(this);
     this->disconnect(ioPacketDevice);
 
-    // delete all used properties
+    // delete (if present) used property for packet cache and the cached DataPacket
     QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
-    DataPacket *packet = variantStoredPackage.type() == QVariant::Invalid ? (DataPacket*)0 : (DataPacket*)variantStoredPackage.value<void *>();
+    DataPacket *packet = (variantStoredPackage.type() == QVariant::Invalid) ? (DataPacket*)0 : (DataPacket*)variantStoredPackage.value<void *>();
+    ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
     if(packet) {
         delete packet;
     }
 
-    // delete properties
-    ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
-
-    // inform the world about the removed device
-    emit this->deviceUsageChanged(ioPacketDevice, false);
+    // call user implementation
+    this->deviceRemoved(ioPacketDevice);
 }
 
 /*
  * dataHandler - packet parser logic, will called by every device on which data is available
  */
-void SQMPacketHandler::dataHandler()
+void IEleaph::dataHandler()
 {
     // get the sending QIODevice and exit if it's not a valid
     QIODevice *ioPacketDevice = qobject_cast<QIODevice*>(this->sender());
@@ -155,11 +153,11 @@ void SQMPacketHandler::dataHandler()
     // read the complete content of packet
     packet->baRawPacketData = new QByteArray(ioPacketDevice->read(packet->intPacktLength));
 
-    // and send packet as signal out in the world ("the world" has the task to delete it!)
-    emit this->newPacketReceived(packet);
+    // call user implementation (IMPORTANT: user implementation has to delete the DataPacket after use!)
+    this->newDataPacketReceived(packet);
 
     // at this point the entire packet was read and sent:
-    // now we delete all used properties
+    // now we delete used Packet-Cache property
     ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
 
     /// </Read Content> <-- Content read complete!
@@ -174,8 +172,9 @@ void SQMPacketHandler::dataHandler()
  * newTcpHost - add new connected tcp host to packet parser
  *              and make sure that the socket will deleted properly
  */
-void SQMPacketHandler::newTcpHost()
+void IEleaph::newTcpHost()
 {
+    // acquire socket from tcpServer
     QTcpSocket *socket = this->serverTcp.nextPendingConnection();
 
     // delete device on disconnect
@@ -184,7 +183,7 @@ void SQMPacketHandler::newTcpHost()
 
     // add the device to packet parser and remove the device if it's destroyed
     // Note: we care about socket deletion!
-    this->addDevice(socket, NeverForgetDevice);
+    this->addDevice(socket, IEleaph::NeverForgetDevice);
 }
 
 
@@ -197,7 +196,7 @@ void SQMPacketHandler::newTcpHost()
 /*
  * startTcpListening - start listenening on given adress and port
  */
-bool SQMPacketHandler::startTcpListening(quint16 port, QHostAddress address)
+bool IEleaph::startTcpListening(quint16 port, QHostAddress address)
 {
     // handle new connected tcp clients
     this->connect(&this->serverTcp, SIGNAL(newConnection()), this, SLOT(newTcpHost()));
@@ -214,33 +213,16 @@ bool SQMPacketHandler::startTcpListening(quint16 port, QHostAddress address)
 /*
  * sendDataPacket - send given data to given IODevice including packet length
  */
-void SQMPacketHandler::sendDataPacket(DataPacket *dpSrc, std::string strDatatoSend)
-{
-   QByteArray baData(strDatatoSend.c_str(), strDatatoSend.length());
-   return SQMPacketHandler::sendDataPacket(dpSrc->ioPacketDevice, &baData);
-}
-
-/*
- * sendDataPacket - send given data to given IODevice including packet length
- */
-void SQMPacketHandler::sendDataPacket(DataPacket *dpSrc, QByteArray *baDatatoSend)
-{
-   return SQMPacketHandler::sendDataPacket(dpSrc->ioPacketDevice, baDatatoSend);
-}
-
-/*
- * sendDataPacket - send given data to given IODevice including packet length
- */
-void SQMPacketHandler::sendDataPacket(QIODevice *device, std::string strDatatoSend)
+void IEleaph::sendDataPacket(QIODevice *device, std::string strDatatoSend)
 {
     QByteArray baData(strDatatoSend.c_str(), strDatatoSend.length());
-    return SQMPacketHandler::sendDataPacket(device, &baData);
+    return IEleaph::sendDataPacket(device, &baData);
 }
 
 /*
  * sendDataPacket - send given data to given IODevice including packet length
  */
-void SQMPacketHandler::sendDataPacket(QIODevice *device, QByteArray *baDatatoSend)
+void IEleaph::sendDataPacket(QIODevice *device, QByteArray *baDatatoSend)
 {
     // create content length with the help of Qt's Endian method qToBigEndian
     PACKETLENGTHTYPE intDataLength = baDatatoSend->length();
@@ -251,26 +233,9 @@ void SQMPacketHandler::sendDataPacket(QIODevice *device, QByteArray *baDatatoSen
     device->write(*baDatatoSend);
 }
 
-
-
 //
-// SINGELTON section
+// Empty Virtual Events
 //
+void IEleaph::deviceAdded(QIODevice* device) { }
 
-// static variable declaration
-SQMPacketHandler* SQMPacketHandler::sqmPacketHandler = 0;
-
-// SINGELTON Constructor
-void SQMPacketHandler::create(QObject *object, quint32 maxDataLength)
-{
-    // only create instance if we haven't allready one
-    if(!SQMPacketHandler::sqmPacketHandler) {
-        SQMPacketHandler::sqmPacketHandler = new SQMPacketHandler(maxDataLength, object);
-    }
-}
-
-// SINGELTON instance getter method
-SQMPacketHandler* SQMPacketHandler::getInstance()
-{
-    return SQMPacketHandler::sqmPacketHandler;
-}
+void IEleaph::deviceRemoved(QIODevice* device) { }

@@ -48,13 +48,9 @@ struct DataPacket
     PACKETLENGTHTYPE intPacktLength;
 };
 
-class SQMPacketHandler : public QObject
+class IEleaph : public QObject
 {
     Q_OBJECT
-    signals:
-        void newPacketReceived(DataPacket *packet);
-        void deviceUsageChanged(QIODevice* device, bool used);
-
     public:
         // device forget options for device addings
         enum DeviceForgetOptions {
@@ -66,34 +62,31 @@ class SQMPacketHandler : public QObject
         // start tcp listening
         bool startTcpListening(quint16 port, QHostAddress address = QHostAddress::Any);
 
-        // singelton static functions
-        static void create(QObject *object = 0, quint32 maxDataLength = 20971520);
-        static SQMPacketHandler* getInstance();
-
         // static datapacket send functions
-        static void sendDataPacket(DataPacket* dpSrc, QByteArray *baDatatoSend);
-        static void sendDataPacket(DataPacket* dpSrc, std::string strDatatoSend);
         static void sendDataPacket(QIODevice* device, QByteArray *baDatatoSend);
         static void sendDataPacket(QIODevice* device, std::string strDatatoSend);
 
     public slots:
-        void addDevice(QIODevice* device, SQMPacketHandler::DeviceForgetOptions forgetoptions = SQMPacketHandler::ForgetDeviceOnDestroy);
+        void addDevice(QIODevice* device, IEleaph::DeviceForgetOptions forgetoptions = IEleaph::ForgetDeviceOnDestroy);
         void removeDevice(QIODevice *device = 0);
 
     protected:
-        // protected con and decon so that no one (except the static create method) is able to construct an object!
-        // set max length by default to 20MB
-        SQMPacketHandler(quint32 maxDataLength = 20971520, QObject *parent = 0);
-        ~SQMPacketHandler();
+        // protected con and decon for inhertance override
+        // set max length by default to 20MB (20971520 Bytes)
+        IEleaph(quint32 maxDataLength = 20971520, QObject *parent = 0);
+        ~IEleaph();
+
+    protected:
+        // pure virtual methods
+        virtual void deviceAdded(QIODevice* device);
+        virtual void deviceRemoved(QIODevice* device);
+        virtual void newDataPacketReceived(DataPacket *dataPacket) = 0;
 
     private slots:
         void newTcpHost();
         void dataHandler();
 
     private:
-        // static memeber for singelton
-        static SQMPacketHandler *sqmPacketHandler;
-
         // dynamic members
         quint32 intMaxDataLength;
 
