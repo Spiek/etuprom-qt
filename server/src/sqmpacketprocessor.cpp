@@ -42,7 +42,7 @@ void SQMPacketProcessor::newPacketReceived(DataPacket *packet)
         }
     }
 
-    // after handling packet delete it
+    // after handling packet, delete it
     delete packet;
 }
 

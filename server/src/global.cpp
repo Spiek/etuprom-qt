@@ -36,6 +36,8 @@ void Global::initialize()
 
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(app);
+
+    // connect all classes (SQMPacketHandler --> SQMPacketProcessor)
     app->connect(packetHandler, SIGNAL(newPacketReceived(DataPacket*)), Global::packetProcessor, SLOT(newPacketReceived(DataPacket*)));
     app->connect(packetHandler, SIGNAL(deviceUsageChanged(QIODevice*,bool)), Global::packetProcessor, SLOT(clientUsageChanged(QIODevice*,bool)));
 
