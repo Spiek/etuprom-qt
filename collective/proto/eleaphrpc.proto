@@ -1,0 +1,18 @@
+package EleaphRPCProtocol;
+message Packet
+{
+	// remote procedure method name
+	required string procedureName = 1;
+	
+	// protocol channel
+	required int32 channel = 2;
+	
+	// Packet data as Key-Value list
+	repeated DataField data = 3;
+}
+
+message DataField
+{
+	required string key = 1;
+	required string value = 2;
+}
