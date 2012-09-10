@@ -18,18 +18,43 @@ EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph
 /*
  * sendRPCDataPacket - send an RPC DataPacket to given Device
  */
-void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member)
+void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot)
 {
-    // normalize method and call delegate
+    // normalize method
     QByteArray methodNormalized = this->extractMethodName(member);
 
     // create delegate which points on the receiver
-    EleaphProtoRPC::Delegate delegate;
-    delegate.object = receiver;
-    delegate.method = methodNormalized;
+    EleaphProtoRPC::Delegate* delegate = new EleaphProtoRPC::Delegate;
+    delegate->object = receiver;
+    delegate->method = methodNormalized;
+    delegate->singleShot = singleShot;
 
     // ... and save the informations
     this->mapRPCFunctions.insertMulti(strMethod, delegate);
+}
+
+void EleaphProtoRPC::unregisterRPCMethod(QString strMethod, QObject *receiver, const char *member)
+{
+    // if no receiver was set, remove all registered procedures for given RPC-function-name
+    if(!receiver) {
+        this->mapRPCFunctions.remove(strMethod);
+    }
+
+    // otherwise we have to loop all registered procedures to determinate the right procedures for deletion
+    else {
+        // normalize method
+        QByteArray methodNormalized = (member) ? this->extractMethodName(member) : QByteArray();
+
+        // loop all registered procedures for given RPC-function-name
+        foreach(Delegate *delegate, this->mapRPCFunctions.values(strMethod)) {
+            // - if member was set, remove only RPC methods which match on receiver and on the member
+            // - if no member was set, remove only RPC methods which match only on the receiver
+            if((!member || delegate->method == methodNormalized) && delegate->object == receiver) {
+                this->mapRPCFunctions.remove(strMethod, delegate);
+                delete delegate;
+            }
+        }
+    }
 }
 
 /*
@@ -85,17 +110,23 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
     // set key-value - values
     for(int i = 0; i < packetProto->data_size(); i++) {
         EleaphRPCProtocol::DataField *field = packetProto->mutable_data(i);
-        protoPacket->mapKeyValues.insert(QString::fromStdString(field->key()), QString::fromStdString(field->value()));
+        protoPacket->mapKeyValues.insertMulti(QString::fromStdString(field->key()), QString::fromStdString(field->value()));
     }
 
     // ... loop all delegates which are registered for strMethodName, and invoke them one by one
-    foreach(EleaphProtoRPC::Delegate delegate, this->mapRPCFunctions.values(strMethodName)) {
+    foreach(EleaphProtoRPC::Delegate *delegate, this->mapRPCFunctions.values(strMethodName)) {
         // simplefy the delegate
-        QObject* object = delegate.object;
-        QByteArray method = delegate.method;
+        QObject* object = delegate->object;
+        QByteArray method = delegate->method;
 
         // call delegate
         QMetaObject::invokeMethod(object, method.constData(), Q_ARG(ProtoRPCPacket*, protoPacket));
+
+        // if we have a single shot procedure connection, remove the delegate from RPCFunction list
+        if(delegate->singleShot) {
+            this->mapRPCFunctions.remove(strMethodName, delegate);
+            delete delegate;
+        }
     }
 
     // after work is done, delete the packert
@@ -112,7 +143,6 @@ QByteArray EleaphProtoRPC::extractMethodName(const char *member)
     // line: 354
     const char* bracketPosition = strchr(member, '(');
     if (!bracketPosition || !(member[0] >= '0' && member[0] <= '3')) {
-        qWarning("EleaphProtoRPC::extractMethodName: Invalid slot specification");
         return QByteArray();
     }
     return QByteArray(member+1, bracketPosition - 1 - member); // extract method name

@@ -26,6 +26,7 @@ class EleaphProtoRPC : public IEleaph
         {
             QObject* object;
             QByteArray method;
+            bool singleShot;
         };
         struct ProtoRPCPacket
         {
@@ -39,7 +40,8 @@ class EleaphProtoRPC : public IEleaph
         EleaphProtoRPC(QObject *parent = 0, quint32 maxDataLength = 20971520);
 
         // rpc funtions
-        void registerRPCMethod(QString strMethod, QObject* receiver, const char *member);
+        void registerRPCMethod(QString strMethod, QObject* receiver, const char *member, bool singleShot = false);
+        void unregisterRPCMethod(QString strMethod, QObject* receiver = 0, const char *member = 0);
         void sendRPCDataPacket(QIODevice *device, QString strProcedureName, QMap<QString, QString> mapKeyValues, qint32 channel = 0);
 
     protected:
@@ -48,7 +50,7 @@ class EleaphProtoRPC : public IEleaph
 
     private:
         // rpc members
-        QMultiMap<QString, EleaphProtoRPC::Delegate> mapRPCFunctions;
+        QMultiMap<QString, EleaphProtoRPC::Delegate*> mapRPCFunctions;
 
         // helper methods
         QByteArray extractMethodName(const char* method);
