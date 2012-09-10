@@ -15,6 +15,9 @@ EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph
 //
 // Public Access functions
 //
+/*
+ * sendRPCDataPacket - send an RPC DataPacket to given Device
+ */
 void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member)
 {
     // normalize method and call delegate
@@ -29,6 +32,9 @@ void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
     this->mapRPCFunctions.insertMulti(strMethod, delegate);
 }
 
+/*
+ * sendRPCDataPacket - send an RPC DataPacket to given Device
+ */
 void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, QMap<QString, QString> mapKeyValues, qint32 channel)
 {
     // create Protobuf RPC-Packet
@@ -53,7 +59,7 @@ void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureNa
 //
 
 /*
- * newDataPacketReceived - handle the procedurecall
+ * newDataPacketReceived - parse the new received dataPacket and forward it to registered Delegate(s)
  */
 void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
 {
@@ -70,13 +76,13 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
         return;
     }
 
-    // create ProtoPack with all needed informations
+    // create ProtoPacket with all needed informations
     ProtoRPCPacket *protoPacket = new ProtoRPCPacket;
     protoPacket->dataPacket = dataPacket;
     protoPacket->strProcedureName = strMethodName;
     protoPacket->intChannel = packetProto->channel();
 
-    // set key value - values
+    // set key-value - values
     for(int i = 0; i < packetProto->data_size(); i++) {
         EleaphRPCProtocol::DataField *field = packetProto->mutable_data(i);
         protoPacket->mapKeyValues.insert(QString::fromStdString(field->key()), QString::fromStdString(field->value()));
@@ -91,13 +97,14 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
         // call delegate
         QMetaObject::invokeMethod(object, method.constData(), Q_ARG(ProtoRPCPacket*, protoPacket));
     }
+
+    // after work is done, delete the packert
+    delete dataPacket;
 }
 
-void EleaphProtoRPC::test(ProtoRPCPacket *rpcPacket)
-{
-    int test = 0;
-}
-
+/*
+ * extractMethodName - normalize SIGNAL and SLOT functionname to normal methodname
+ */
 QByteArray EleaphProtoRPC::extractMethodName(const char *member)
 {
     // code from qt source (4.8.2)

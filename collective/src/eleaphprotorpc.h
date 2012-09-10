@@ -52,9 +52,6 @@ class EleaphProtoRPC : public IEleaph
 
         // helper methods
         QByteArray extractMethodName(const char* method);
-
-    public slots:
-        void test(ProtoRPCPacket* rpcPacket);
 };
 
 #endif // ELEAPHPROTORPC_H
