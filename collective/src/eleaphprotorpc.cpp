@@ -9,7 +9,7 @@
 EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph(maxDataLength, parent)
 {
     // register the ProtoPacket
-    qRegisterMetaType<ProtoPacket>("ProtoPacket");
+    qRegisterMetaType<ProtoRPCPacket>("ProtoRPCPacket");
 }
 
 //
@@ -17,14 +17,36 @@ EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph
 //
 void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member)
 {
+    // normalize method and call delegate
+    QByteArray methodNormalized = this->extractMethodName(member);
+
     // create delegate which points on the receiver
     EleaphProtoRPC::Delegate delegate;
     delegate.object = receiver;
-    delegate.method = member;
+    delegate.method = methodNormalized;
 
     // ... and save the informations
     this->mapRPCFunctions.insertMulti(strMethod, delegate);
 }
+
+void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, QMap<QString, QString> mapKeyValues, qint32 channel)
+{
+    // create Protobuf RPC-Packet
+    EleaphRPCProtocol::Packet *packetProto = new EleaphRPCProtocol::Packet;
+    packetProto->set_procedurename(strProcedureName.toStdString());
+    packetProto->set_channel(channel);
+
+    // add key values
+    foreach(QString strKey, mapKeyValues.keys()) {
+        EleaphRPCProtocol::DataField *dataField = packetProto->add_data();
+        dataField->set_key(strKey.toStdString());
+        dataField->set_value(mapKeyValues.value(strKey).toStdString());
+    }
+
+    // send the RPC-Packet
+    this->sendDataPacket(device, packetProto->SerializeAsString());
+}
+
 
 //
 // Interface implementations
@@ -37,7 +59,7 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
 {
     // deserialize packet
     EleaphRPCProtocol::Packet *packetProto = new EleaphRPCProtocol::Packet;
-    packetProto->ParseFromString(QString(*dataPacket->baRawPacketData).toStdString());
+    packetProto->ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->size());
 
     // simplefy some packet values
     QString strMethodName = QString::fromStdString(packetProto->procedurename());
@@ -49,29 +71,42 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
     }
 
     // create ProtoPack with all needed informations
-    ProtoPacket *protoPacket = new ProtoPacket;
+    ProtoRPCPacket *protoPacket = new ProtoRPCPacket;
     protoPacket->dataPacket = dataPacket;
     protoPacket->strProcedureName = strMethodName;
     protoPacket->intChannel = packetProto->channel();
 
     // set key value - values
-    foreach(EleaphRPCProtocol::DataField field, packetProto->data()) {
-        protoPacket->mapKeyValues.insert(QString::fromStdString(field.key()), QString::fromStdString(field.value()));
+    for(int i = 0; i < packetProto->data_size(); i++) {
+        EleaphRPCProtocol::DataField *field = packetProto->mutable_data(i);
+        protoPacket->mapKeyValues.insert(QString::fromStdString(field->key()), QString::fromStdString(field->value()));
     }
 
-    // ... if procedure for packet was found, loop all registered Delegates of the function and call one by one
-    foreach(QString strProcedureName, this->mapRPCFunctions.keys()) {
-        // skip function if function name is not the packet procedure name
-        if(strProcedureName != strMethodName) {
-            continue;
-        }
-
+    // ... loop all delegates which are registered for strMethodName, and invoke them one by one
+    foreach(EleaphProtoRPC::Delegate delegate, this->mapRPCFunctions.values(strMethodName)) {
         // simplefy the delegate
-        EleaphProtoRPC::Delegate delegate = this->mapRPCFunctions.value(strProcedureName);
         QObject* object = delegate.object;
-        const char* method = delegate.method;
+        QByteArray method = delegate.method;
 
         // call delegate
-        QMetaObject::invokeMethod(object, method, Q_ARG(ProtoPacket*, protoPacket));
+        QMetaObject::invokeMethod(object, method.constData(), Q_ARG(ProtoRPCPacket*, protoPacket));
     }
+}
+
+void EleaphProtoRPC::test(ProtoRPCPacket *rpcPacket)
+{
+    int test = 0;
+}
+
+QByteArray EleaphProtoRPC::extractMethodName(const char *member)
+{
+    // code from qt source (4.8.2)
+    // src: qtimer.cpp
+    // line: 354
+    const char* bracketPosition = strchr(member, '(');
+    if (!bracketPosition || !(member[0] >= '0' && member[0] <= '3')) {
+        qWarning("EleaphProtoRPC::extractMethodName: Invalid slot specification");
+        return QByteArray();
+    }
+    return QByteArray(member+1, bracketPosition - 1 - member); // extract method name
 }

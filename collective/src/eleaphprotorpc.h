@@ -25,9 +25,9 @@ class EleaphProtoRPC : public IEleaph
         struct Delegate
         {
             QObject* object;
-            const char* method;
+            QByteArray method;
         };
-        struct ProtoPacket
+        struct ProtoRPCPacket
         {
             DataPacket *dataPacket;
             QString strProcedureName;
@@ -40,7 +40,7 @@ class EleaphProtoRPC : public IEleaph
 
         // rpc funtions
         void registerRPCMethod(QString strMethod, QObject* receiver, const char *member);
-
+        void sendRPCDataPacket(QIODevice *device, QString strProcedureName, QMap<QString, QString> mapKeyValues, qint32 channel = 0);
 
     protected:
         // interface implementation
@@ -49,6 +49,12 @@ class EleaphProtoRPC : public IEleaph
     private:
         // rpc members
         QMultiMap<QString, EleaphProtoRPC::Delegate> mapRPCFunctions;
+
+        // helper methods
+        QByteArray extractMethodName(const char* method);
+
+    public slots:
+        void test(ProtoRPCPacket* rpcPacket);
 };
 
 #endif // ELEAPHPROTORPC_H
