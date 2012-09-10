@@ -27,6 +27,13 @@ class EleaphProtoRPC : public IEleaph
             QObject* object;
             const char* method;
         };
+        struct ProtoPacket
+        {
+            DataPacket *dataPacket;
+            QString strProcedureName;
+            qint32 intChannel;
+            QMap<QString, QString> mapKeyValues;
+        };
 
         // con / decon
         EleaphProtoRPC(QObject *parent = 0, quint32 maxDataLength = 20971520);

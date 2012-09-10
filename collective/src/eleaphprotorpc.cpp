@@ -8,7 +8,8 @@
 
 EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph(maxDataLength, parent)
 {
-
+    // register the ProtoPacket
+    qRegisterMetaType<ProtoPacket>("ProtoPacket");
 }
 
 //
@@ -47,6 +48,17 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
         return;
     }
 
+    // create ProtoPack with all needed informations
+    ProtoPacket *protoPacket = new ProtoPacket;
+    protoPacket->dataPacket = dataPacket;
+    protoPacket->strProcedureName = strMethodName;
+    protoPacket->intChannel = packetProto->channel();
+
+    // set key value - values
+    foreach(EleaphRPCProtocol::DataField field, packetProto->data()) {
+        protoPacket->mapKeyValues.insert(QString::fromStdString(field.key()), QString::fromStdString(field.value()));
+    }
+
     // ... if procedure for packet was found, loop all registered Delegates of the function and call one by one
     foreach(QString strProcedureName, this->mapRPCFunctions.keys()) {
         // skip function if function name is not the packet procedure name
@@ -54,12 +66,12 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
             continue;
         }
 
-        // simplefy the function values
+        // simplefy the delegate
         EleaphProtoRPC::Delegate delegate = this->mapRPCFunctions.value(strProcedureName);
         QObject* object = delegate.object;
         const char* method = delegate.method;
 
-        // ...function found, so call it
-        QMetaObject::invokeMethod(object, method, Q_ARG(google::protobuf::Message, *packetProto));
+        // call delegate
+        QMetaObject::invokeMethod(object, method, Q_ARG(ProtoPacket*, protoPacket));
     }
 }
