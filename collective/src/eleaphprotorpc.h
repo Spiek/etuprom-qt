@@ -15,7 +15,7 @@
 #include <QtCore/QMetaObject>
 
 // google protobuf
-#include "../../collective/proto/src/eleaphrpc.pb.h"
+#include "eleaphrpc.pb.h"
 
 class EleaphProtoRPC : public IEleaph
 {
@@ -28,21 +28,22 @@ class EleaphProtoRPC : public IEleaph
             QByteArray method;
             bool singleShot;
         };
-        struct ProtoRPCPacket
-        {
-            DataPacket *dataPacket;
-            QString strProcedureName;
-            qint32 intChannel;
-            QMap<QString, QString> mapKeyValues;
-        };
 
         // con / decon
         EleaphProtoRPC(QObject *parent = 0, quint32 maxDataLength = 20971520);
 
-        // rpc funtions
+        //
+        // RPC funtions
+        //
+
+        // register/unregister
         void registerRPCMethod(QString strMethod, QObject* receiver, const char *member, bool singleShot = false);
         void unregisterRPCMethod(QString strMethod, QObject* receiver = 0, const char *member = 0);
-        void sendRPCDataPacket(QIODevice *device, QString strProcedureName, QMap<QString, QString> mapKeyValues, qint32 channel = 0);
+
+        // sending
+        void sendRPCDataPacket(QIODevice *device, QString strProcedureName, std::string);
+        void sendRPCDataPacket(QIODevice *device, QString strProcedureName, char* data, int length);
+        void sendRPCDataPacket(QIODevice *device, QString strProcedureName, QByteArray data);
 
     protected:
         // interface implementation

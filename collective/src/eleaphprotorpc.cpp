@@ -9,7 +9,7 @@
 EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph(maxDataLength, parent)
 {
     // register the ProtoPacket
-    qRegisterMetaType<ProtoRPCPacket>("ProtoRPCPacket");
+    qRegisterMetaType<DataPacket>("DataPacket");
 }
 
 //
@@ -58,24 +58,41 @@ void EleaphProtoRPC::unregisterRPCMethod(QString strMethod, QObject *receiver, c
 }
 
 /*
+ * sendRPCDataPacket - OVERLOADED: send an RPC DataPacket to given Device
+ */
+void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, char *data, int length)
+{
+    return this->sendRPCDataPacket(device, strProcedureName, QByteArray::fromRawData(data, length));
+}
+
+/*
+ * sendRPCDataPacket - OVERLOADED: send an RPC DataPacket to given Device
+ */
+void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, std::string data)
+{
+    return this->sendRPCDataPacket(device, strProcedureName, QByteArray::fromRawData(data.c_str(), data.length()));
+}
+
+/*
  * sendRPCDataPacket - send an RPC DataPacket to given Device
  */
-void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, QMap<QString, QString> mapKeyValues, qint32 channel)
+void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, QByteArray data)
 {
     // create Protobuf RPC-Packet
     EleaphRPCProtocol::Packet *packetProto = new EleaphRPCProtocol::Packet;
     packetProto->set_procedurename(strProcedureName.toStdString());
-    packetProto->set_channel(channel);
 
-    // add key values
-    foreach(QString strKey, mapKeyValues.keys()) {
-        EleaphRPCProtocol::DataField *dataField = packetProto->add_data();
-        dataField->set_key(strKey.toStdString());
-        dataField->set_value(mapKeyValues.value(strKey).toStdString());
-    }
+    // prepend rpc packet to data packet
+    int packetSize = packetProto->ByteSize();
+    char* rawData = (char*)malloc(packetSize);
+    packetProto->SerializeToArray(rawData, packetSize);
+    data.prepend(rawData, packetSize);
 
     // send the RPC-Packet
-    this->sendDataPacket(device, packetProto->SerializeAsString());
+    this->sendDataPacket(device, &data);
+
+    // free memory
+    free(rawData);
 }
 
 
@@ -101,17 +118,10 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
         return;
     }
 
-    // create ProtoPacket with all needed informations
-    ProtoRPCPacket *protoPacket = new ProtoRPCPacket;
-    protoPacket->dataPacket = dataPacket;
-    protoPacket->strProcedureName = strMethodName;
-    protoPacket->intChannel = packetProto->channel();
-
-    // set key-value - values
-    for(int i = 0; i < packetProto->data_size(); i++) {
-        EleaphRPCProtocol::DataField *field = packetProto->mutable_data(i);
-        protoPacket->mapKeyValues.insertMulti(QString::fromStdString(field->key()), QString::fromStdString(field->value()));
-    }
+    // remove EleaphRPCProtocol::Packet from data
+    int intRPCPacketLength = packetProto->ByteSize() - 2;
+    dataPacket->baRawPacketData->remove(0, intRPCPacketLength);
+    dataPacket->intPacktLength -= intRPCPacketLength;
 
     // ... loop all delegates which are registered for strMethodName, and invoke them one by one
     foreach(EleaphProtoRPC::Delegate *delegate, this->mapRPCFunctions.values(strMethodName)) {
@@ -120,7 +130,7 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
         QByteArray method = delegate->method;
 
         // call delegate
-        QMetaObject::invokeMethod(object, method.constData(), Q_ARG(ProtoRPCPacket*, protoPacket));
+        QMetaObject::invokeMethod(object, method.constData(), Q_ARG(DataPacket*, dataPacket));
 
         // if we have a single shot procedure connection, remove the delegate from RPCFunction list
         if(delegate->singleShot) {
