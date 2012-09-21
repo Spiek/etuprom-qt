@@ -77,7 +77,7 @@ class IEleaph : public QObject
         ~IEleaph();
 
     protected:
-        // pure virtual methods
+        // virtual methods
         virtual void deviceAdded(QIODevice* device);
         virtual void deviceRemoved(QIODevice* device);
         virtual void newDataPacketReceived(DataPacket *dataPacket) = 0;

@@ -29,6 +29,9 @@ void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
     delegate->method = methodNormalized;
     delegate->singleShot = singleShot;
 
+    // if receiver was destroyed, remove it's rpc methods
+    this->connect(receiver, SIGNAL(destroyed()), this, SLOT(unregisterRPCObject()));
+
     // ... and save the informations
     this->mapRPCFunctions.insertMulti(strMethod, delegate);
 }
@@ -56,6 +59,26 @@ void EleaphProtoRPC::unregisterRPCMethod(QString strMethod, QObject *receiver, c
         }
     }
 }
+
+void EleaphProtoRPC::unregisterRPCMethod(QObject *receiver, const char *member)
+{
+    // normalize method
+    QByteArray methodNormalized = (member) ? this->extractMethodName(member) : QByteArray();
+
+    // loop all registered rpc methods
+    foreach(QString strMethod, this->mapRPCFunctions.keys()) {
+        // loop all registered delegates for rpc method
+        foreach(Delegate *delegate, this->mapRPCFunctions.values(strMethod)) {
+            // - if member was set, remove only RPC methods which match on receiver and on the member
+            // - if no member was set, remove only RPC methods which match only on the receiver
+            if(delegate->object == receiver && (!member || delegate->method == methodNormalized)) {
+                this->mapRPCFunctions.remove(strMethod, delegate);
+                delete delegate;
+            }
+       }
+    }
+}
+
 
 /*
  * sendRPCDataPacket - OVERLOADED: send an RPC DataPacket to given Device
@@ -142,6 +165,35 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
     // after work is done, delete the packert
     delete dataPacket;
 }
+
+void EleaphProtoRPC::deviceAdded(QIODevice *device)
+{
+    emit this->sigDeviceAdded(device);
+}
+
+void EleaphProtoRPC::deviceRemoved(QIODevice *device)
+{
+    emit this->sigDeviceRemoved(device);
+}
+
+
+//
+// private slots
+//
+
+void EleaphProtoRPC::unregisterRPCObject()
+{
+    QObject *objToUnregister = this->sender();
+
+    // unregister all rpc methods which match on object
+    return this->unregisterRPCMethod(objToUnregister);
+}
+
+
+
+//
+// Helper Methods
+//
 
 /*
  * extractMethodName - normalize SIGNAL and SLOT functionname to normal methodname

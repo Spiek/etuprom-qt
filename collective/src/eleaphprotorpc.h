@@ -20,6 +20,10 @@
 class EleaphProtoRPC : public IEleaph
 {
     Q_OBJECT
+    signals:
+        void sigDeviceAdded(QIODevice* device);
+        void sigDeviceRemoved(QIODevice* device);
+
     public:
         // structure definations
         struct Delegate
@@ -39,6 +43,7 @@ class EleaphProtoRPC : public IEleaph
         // register/unregister
         void registerRPCMethod(QString strMethod, QObject* receiver, const char *member, bool singleShot = false);
         void unregisterRPCMethod(QString strMethod, QObject* receiver = 0, const char *member = 0);
+        void unregisterRPCMethod(QObject* receiver, const char *member = 0);
 
         // sending
         void sendRPCDataPacket(QIODevice *device, QString strProcedureName, std::string);
@@ -48,6 +53,11 @@ class EleaphProtoRPC : public IEleaph
     protected:
         // interface implementation
         virtual void newDataPacketReceived(DataPacket *dataPacket);
+        virtual void deviceAdded(QIODevice* device);
+        virtual void deviceRemoved(QIODevice* device);
+
+    private slots:
+        void unregisterRPCObject();
 
     private:
         // rpc members
