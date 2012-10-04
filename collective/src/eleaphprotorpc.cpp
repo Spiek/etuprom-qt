@@ -85,7 +85,7 @@ void EleaphProtoRPC::unregisterRPCMethod(QObject *receiver, const char *member)
  */
 void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, char *data, int length)
 {
-    return this->sendRPCDataPacket(device, strProcedureName, QByteArray::fromRawData(data, length));
+    return this->sendRPCDataPacket(device, strProcedureName, QByteArray(data, length));
 }
 
 /*
@@ -93,7 +93,7 @@ void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureNa
  */
 void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, std::string data)
 {
-    return this->sendRPCDataPacket(device, strProcedureName, QByteArray::fromRawData(data.c_str(), data.length()));
+    return this->sendRPCDataPacket(device, strProcedureName, QByteArray(data.c_str(), data.length()));
 }
 
 /*
@@ -101,21 +101,16 @@ void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureNa
  */
 void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureName, QByteArray data)
 {
-    // create Protobuf RPC-Packet
-    EleaphRPCProtocol::Packet *packetProto = new EleaphRPCProtocol::Packet;
-    packetProto->set_procedurename(strProcedureName.toStdString());
+    // create content length with the help of Qt's Endian method qToBigEndian
+    qint16 intDataLength = strProcedureName.length();
+    intDataLength = qToBigEndian<qint16>(intDataLength);
 
-    // prepend rpc packet to data packet
-    int packetSize = packetProto->ByteSize();
-    char* rawData = (char*)malloc(packetSize);
-    packetProto->SerializeToArray(rawData, packetSize);
-    data.prepend(rawData, packetSize);
+    // prepend the content-length and method name to the data
+    data.prepend(strProcedureName.toStdString().c_str(), strProcedureName.length());
+    data.prepend((char*)&intDataLength, sizeof(qint16));
 
     // send the RPC-Packet
     this->sendDataPacket(device, &data);
-
-    // free memory
-    free(rawData);
 }
 
 
@@ -128,21 +123,18 @@ void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureNa
  */
 void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
 {
-    // deserialize packet
-    EleaphRPCProtocol::Packet *packetProto = new EleaphRPCProtocol::Packet;
-    packetProto->ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->size());
-
-    // simplefy some packet values
-    QString strMethodName = QString::fromStdString(packetProto->procedurename());
+    // extract rpc method name from packet with the help of Qt's Endian method qFromBigEndian
+    qint16* ptrPacketLength = (qint16*)dataPacket->baRawPacketData->data();
+    qint16 lenData = qFromBigEndian<qint16>(*ptrPacketLength);
+    QString strMethodName = QString(dataPacket->baRawPacketData->mid(sizeof(qint16), lenData));
 
     // if given procedure name of the packet is not registered, then cleanup and exit
     if(!this->mapRPCFunctions.contains(strMethodName)) {
-        delete packetProto;
         return;
     }
 
     // remove EleaphRPCProtocol::Packet from data
-    int intRPCPacketLength = packetProto->ByteSize() - 2;
+    int intRPCPacketLength = sizeof(qint16) + lenData;
     dataPacket->baRawPacketData->remove(0, intRPCPacketLength);
     dataPacket->intPacktLength -= intRPCPacketLength;
 

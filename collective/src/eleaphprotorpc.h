@@ -14,9 +14,6 @@
 #include <QtCore/QMultiMap>
 #include <QtCore/QMetaObject>
 
-// google protobuf
-#include "eleaphrpc.pb.h"
-
 class EleaphProtoRPC : public IEleaph
 {
     Q_OBJECT
