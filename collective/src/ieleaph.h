@@ -80,6 +80,7 @@ class IEleaph : public QObject
         // virtual methods
         virtual void deviceAdded(QIODevice* device);
         virtual void deviceRemoved(QIODevice* device);
+        virtual void packetDownloadProcess(QIODevice* device, qint64 downloadedBytes, qint64 totalBytes);
         virtual void newDataPacketReceived(DataPacket *dataPacket) = 0;
 
     private slots:

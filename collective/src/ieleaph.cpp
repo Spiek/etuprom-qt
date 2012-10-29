@@ -143,6 +143,9 @@ void IEleaph::dataHandler()
     /// </Read Header> <-- Header read complete!
     /// <Read Content>
 
+    // inform the outside world about packet download process
+    this->packetDownloadProcess(ioPacketDevice, (intAvailableDataLength > packet->intPacktLength ? packet->intPacktLength : intAvailableDataLength ), packet->intPacktLength);
+
     // if not enough data is present to read complete content, exit here and wait for more data!
     if(intAvailableDataLength < packet->intPacktLength) {
         return;
@@ -237,3 +240,5 @@ void IEleaph::sendDataPacket(QIODevice *device, QByteArray *baDatatoSend)
 void IEleaph::deviceAdded(QIODevice* device) { }
 
 void IEleaph::deviceRemoved(QIODevice* device) { }
+
+void IEleaph::packetDownloadProcess(QIODevice *device, qint64 downloadedBytes, qint64 totalBytes) { }
