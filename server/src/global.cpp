@@ -2,6 +2,10 @@
 
 // init static vars
 SQMPacketProcessor* Global::packetProcessor = 0;
+EleaphProtoRPC* Global::eleaphRPC = 0;
+Usermanager* Global::userManager = 0;
+DatabaseHelper* Global::databaseHelper = 0;
+
 bool Global::init = false;
 
 // Fixme: make it dynamic with a config file
@@ -18,29 +22,47 @@ void Global::initialize()
     QCoreApplication* app = QCoreApplication::instance();
 
     // init database helper
-    if(DatabaseHelper::initialize("QODBC", "sqm")) {
+    QSqlDatabase database = QSqlDatabase::addDatabase("QODBC", "sqm");
+    database.setDatabaseName("sqm");
+    if(database.open()) {
         printf("Datenbank Verbindung erfolgreich!");
+        Global::databaseHelper = new DatabaseHelper("sqm");
     } else {
         qFatal("Datenbank Verbindung NICHT erfolgreich!");
     }
 
-    // initialize packet handler, which handled the packet parsing
-    SQMPacketHandler::create(app);
-    SQMPacketHandler *packetHandler = SQMPacketHandler::getInstance();
+    // initialize eleaph-proto-RPC-System
+    Global::eleaphRPC = new EleaphProtoRPC(app, 65536);
 
     // initialize Usermanager
-    Usermanager::create(app);
-
-    // and start tcp listening
-    packetHandler->startTcpListening(Global::intListenPort);
+    Global::userManager = new Usermanager(app);
 
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(app);
 
-    // connect all classes (SQMPacketHandler --> SQMPacketProcessor)
-    app->connect(packetHandler, SIGNAL(newPacketReceived(DataPacket*)), Global::packetProcessor, SLOT(newPacketReceived(DataPacket*)));
-    app->connect(packetHandler, SIGNAL(deviceUsageChanged(QIODevice*,bool)), Global::packetProcessor, SLOT(clientUsageChanged(QIODevice*,bool)));
+    // start the tcp listening
+    Global::eleaphRPC->startTcpListening(Global::intListenPort);
 
     // class was successfull initialized!
     Global::init = true;
+}
+
+SQMPacketProcessor* Global::getPPInstance()
+{
+    return Global::packetProcessor;
+}
+
+EleaphProtoRPC* Global::getERPCInstance()
+{
+    return Global::eleaphRPC;
+}
+
+Usermanager* Global::getUserManager()
+{
+    return Global::userManager;
+}
+
+DatabaseHelper* Global::getDatabaseHelper()
+{
+    return Global::databaseHelper;
 }

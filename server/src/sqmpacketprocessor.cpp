@@ -8,7 +8,9 @@
 
 SQMPacketProcessor::SQMPacketProcessor(QObject *parent) : QObject(parent)
 {
-
+    // register needed RPC methods
+    EleaphProtoRPC *eleaphRPC = Global::getERPCInstance();
+    eleaphRPC->registerRPCMethod("login", this, SLOT(handleLogin(DataPacket*)));
 }
 
 SQMPacketProcessor::~SQMPacketProcessor()
@@ -19,120 +21,56 @@ SQMPacketProcessor::~SQMPacketProcessor()
 
 //
 // Section:
-//  public SLOTS (called by Qt's event system)
-//
-
-void SQMPacketProcessor::newPacketReceived(DataPacket *packet)
-{
-    // deserialize protobuf packet
-    Protocol::Packet protocolPacket;
-    protocolPacket.ParseFromArray(packet->baRawPacketData->constData(), packet->intPacktLength);
-    Protocol::Packet_PacketType packetType = protocolPacket.packettype();
-
-    // BEFORE LOGIN: handle LoginRequest packet
-    if(packetType == Protocol::Packet_PacketType_LoginRequest) {
-        this->handleLogin(packet, &protocolPacket);
-    }
-
-    // AFTER LOGIN
-    else if(Usermanager::getInstance()->isLoggedIn(packet->ioPacketDevice)) {
-        // handle messages
-        if(packetType == Protocol::Packet_PacketType_UserMessage) {
-            this->handleUserMessage(packet, &protocolPacket);
-        }
-    }
-
-    // after handling packet, delete it
-    delete packet;
-}
-
-void SQMPacketProcessor::clientUsageChanged(QIODevice *device, bool used)
-{
-    // if we have a disconnect and user was logged in,
-    // remove user from cached user list and update on/offline state in db
-    if(!used && Usermanager::getInstance()->getConnectedUser(device)) {
-        Usermanager::getInstance()->removeUser(device);
-    }
-}
-
-
-//
-// Section:
 //  Protocol handler methods
 //
 
-void SQMPacketProcessor::handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket)
+void SQMPacketProcessor::handleLogin(DataPacket* dataPacket)
 {
     // simplefy login packet values
-    Protocol::LoginRequest* login = protocolPacket->mutable_requestlogin();
-    QString username = QString::fromStdString(login->username()).toAscii();
-    QString password  = QString::fromStdString(login->password()).toAscii();
+    Protocol::LoginRequest request;
+    if(request.ParseFromArray(dataPacket->baRawPacketData, dataPacket->baRawPacketData->length())) {
+        qWarning("[%s][%d] - Protocol Violation by Trying to Parse LoginRequest", __PRETTY_FUNCTION__ , __LINE__);
+        return;
+    }
+    QString strUsername = QString::fromStdString(request.username());
+    QString strPassword  = QString::fromStdString(request.password());
 
     // search for user
-    QSqlQuery query = DatabaseHelper::getUserByIdUserNameAndPw(username, password);
+    DatabaseHelper *databaseHelper = Global::getDatabaseHelper();
+    Protocol::User* user = new Protocol::User;
 
-    // create response protobuf packet and fill it with default values
-    Protocol::Packet packetResponse;
-    packetResponse.set_packettype(Protocol::Packet_PacketType_LoginResponse);
-    Protocol::LoginResponse *loginResponse = packetResponse.mutable_responselogin();
-
-    // login was success
-    Protocol::User *user = 0;
-    if(query.next()) {
-        // create new user
-        user = Usermanager::getInstance()->setUserfromQuery(&query);
-        Usermanager::getInstance()->addUser(dataPacket->ioPacketDevice, user);
-
-        // login was succcessfull
-        loginResponse->set_type(Protocol::LoginResponse_Type_Success);
+    // inform the client if the user was found, or not
+    Protocol::LoginResponse response;
+    if(!databaseHelper->getUserByIdUserNameAndPw(strUsername, strPassword, user)) {
+        response.set_type(Protocol::LoginResponse_Type_LoginIncorect);
+    } else {
+        response.set_type(Protocol::LoginResponse_Type_Success);
     }
+    Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "login", response.SerializeAsString());
 
-    // login was NOT success
-    else {
-        loginResponse->set_type(Protocol::LoginResponse_Type_LoginIncorect);
-    }
-
-    // simplefy packet handler
-    SQMPacketHandler *packethandler = SQMPacketHandler::getInstance();
-
-    // send login response packet
-    packethandler->sendDataPacket(dataPacket->ioPacketDevice, packetResponse.SerializeAsString());
-
-    // exit here if login was not correct
-    if(!user) {
+    // if login wasn't successfull, delte constructed user and end here
+    if(response.type() == Protocol::LoginResponse_Type_LoginIncorect) {
+        delete user;
         return;
     }
 
-    //
-    // send UserInformations
-    //
+    // add user to the usermanager
+    Global::getUserManager()->addUser(dataPacket->ioPacketDevice, user);
 
-    // build UserInformations protoful protocol packet and fill it with default values
-    Protocol::Packet packetUserInformations;
-    packetUserInformations.set_packettype(Protocol::Packet_PacketType_UserInformations);
-    Protocol::UserInformations *userInformation = packetUserInformations.mutable_userinformations();
+    // send the user information about the user who want to login
+    Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "user", user->SerializeAsString());
 
-    // set user informations
-    userInformation->mutable_user()->MergeFrom(*user);
-
-    // select all contacts which are in the contactlist of connected user
-    query = DatabaseHelper::getContactsByUserId(user->id());
-
-    // ... and add them to the protobuf contactlist
-    while(query.next()) {
-        Protocol::Contact *contact = userInformation->add_contact();
-        Usermanager::getInstance()->setUserfromQuery(&query, contact->mutable_user());
-        contact->set_group(query.value(5).toString().toStdString());
+    // get (if available) and send the contact list users to user
+    Protocol::ContactList contactList;
+    if(databaseHelper->getContactsByUserId(user->id(), &contactList)) {
+        Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist", contactList.SerializeAsString());
     }
-
-    // send userinformation packet
-    packethandler->sendDataPacket(dataPacket->ioPacketDevice, packetUserInformations.SerializeAsString());
 }
 
-void SQMPacketProcessor::handleUserMessage(DataPacket *dataPacket, Protocol::Packet *protocolPacket)
+void SQMPacketProcessor::handleUserMessage(DataPacket *dataPacket)
 {
     // simplefy global values
-    Usermanager *userManager = Usermanager::getInstance();
+    /*Usermanager *userManager = Usermanager::getInstance();
     Protocol::User *user = userManager->getConnectedUser(dataPacket->ioPacketDevice);
     qint32 intSenderUserId = user->id();
 
@@ -151,5 +89,5 @@ void SQMPacketProcessor::handleUserMessage(DataPacket *dataPacket, Protocol::Pac
     }
 
     // save message in database
-    DatabaseHelper::createNewUserMessage(intSenderUserId, intReceiverUserId, strMessage);
+    DatabaseHelper::createNewUserMessage(intSenderUserId, intReceiverUserId, strMessage);*/
 }

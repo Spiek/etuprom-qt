@@ -15,22 +15,26 @@ CONFIG	-= app_bundle
 TEMPLATE = app
 
 # Sources
-SOURCES +=	server/src/main.cpp \
-                collective/src/sqmpackethandler.cpp \
-                server/src/sqmpacketprocessor.cpp \
-                collective/proto/src/protocol.pb.cc \
-                server/src/global.cpp \
-                server/src/databasehelper.cpp \
-    			server/src/usermanager.cpp
+SOURCES +=  server/src/main.cpp \
+            server/src/sqmpacketprocessor.cpp \
+            server/src/global.cpp \
+            server/src/databasehelper.cpp \
+            server/src/usermanager.cpp \
+            collective/src/eleaphprotorpc.cpp \
+            collective/proto/src/protocol.pb.cc \
+            collective/src/ieleaph.cpp \
+            server/src/querybuilder.cpp
 
 # Headers
-HEADERS +=	\
-                collective/src/sqmpackethandler.h \
-                server/src/sqmpacketprocessor.h \
-                collective/proto/src/protocol.pb.h \
-                server/src/global.h \
-                server/src/databasehelper.h \
-    			server/src/usermanager.h
+HEADERS +=  \
+            server/src/sqmpacketprocessor.h \
+            server/src/global.h \
+            server/src/databasehelper.h \
+            server/src/usermanager.h \
+            collective/src/eleaphprotorpc.h \
+            collective/proto/src/protocol.pb.cc \
+            collective/src/ieleaph.h \
+            server/src/querybuilder.h
 
 # include path
 INCLUDEPATH += "include/"
@@ -47,16 +51,16 @@ Prototargetdir = $$Protosrcdir/src
 
 # remove all existing compiled .proto files
 win32 {
-    system("del \"$$Prototargetdir\"\\*.h")
-    system("del \"$$Prototargetdir\"\\*.cc")
+        system("del \"$$Prototargetdir\"\\*.h")
+        system("del \"$$Prototargetdir\"\\*.cc")
 }
 linux {
-    system("rm -f $$Prototargetdir/*.h")
-    system("rm -f $$Prototargetdir/*.cc")
+	system("rm -f $$Prototargetdir/*.h")
+	system("rm -f $$Prototargetdir/*.cc")
 }
 
 # ...and recompile them
-system(protoc -I=$$Protosrcdir --cpp_out=$$Prototargetdir $$Protosrcdir/*.proto)
+system(protoc -I=\"$$Protosrcdir\" --cpp_out=\"$$Prototargetdir\" \"$$Protosrcdir\"/*.proto)
 
 # link against protobuf lib (we can't do that in mkspecs because the protobuf lib has to be set as last lib)
 LIBS += -lprotobuf

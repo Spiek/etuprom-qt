@@ -1,25 +1,4 @@
 package Protocol;
-message Packet
-{
-	// Packettype
-	enum PacketType { LoginRequest = 1; LoginResponse = 2; UserInformations = 3; UserAltered = 4; UserMessage = 5; }
-	
-	// types
-	required PacketType packetType = 1;
-	
-	// packet type: Login
-	optional LoginRequest requestLogin = 2;
-	optional LoginResponse responseLogin = 3;
-	
-	// packet type: User informations
-	optional UserInformations userinformations = 4;
-	
-	// packet type: User change
-	optional User userAltered = 5;
-	
-	// packet type: UserMessage
-	optional UserMessage userMessage = 6;
-}
 
 // Sub Messages
 message LoginRequest
@@ -37,24 +16,6 @@ message LoginResponse
 	required Type type = 1;
 }
 
-message UserInformations
-{
-	// contact list
-	repeated Contact contact = 1;
-	
-	// logged in user information
-	required User user = 2;
-}
-
-message Contact
-{
-	// user data
-	required User user = 1;
-	
-	// additional contact informations
-	required string group = 2;
-}
-
 message User
 {	
 	// user Data
@@ -65,12 +26,22 @@ message User
 	required bool visible = 5;
 }
 
-message UserMessage
+message ContactList
 {
-	// message data
-	required int32 receiverUserId = 1;
-	required string messageText = 2;
+	// contact list
+	repeated Contact contact = 1;
+}
+
+message Contact
+{
+	// contact user data
+	required User user = 1;
 	
-	// sender data
-	optional int32 senderUserId = 3;
+	// additional contact informations
+	required string group = 2;
+}
+
+message Users
+{
+	repeated User user = 1;
 }

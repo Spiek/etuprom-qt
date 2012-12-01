@@ -11,32 +11,31 @@ class SQMPacketProcessor;
 #include <QtCore/QPair>
 
 // own libs
-#include "SQMPacketHandler"
 #include "usermanager.h"
-
-// protobuf libs
-#include "protocol.pb.h"
+#include "EleaphProtoRpc"
+#include "global.h"
 
 class SQMPacketProcessor : public QObject
 {
     Q_OBJECT
+    struct User
+    {
+        qint32 id;
+        QString userName;
+        qint32 state;
+        bool online;
+        bool visible;
+    };
+
     public:
         // con/decon
         SQMPacketProcessor(QObject *parent = 0);
         ~SQMPacketProcessor();
 
-    private:
-        QMap<QIODevice*, Protocol::User*> mapSocketUser;
-        QMap<qint32, QPair<QIODevice*, Protocol::User*> > mapIdUser;
-
-    public slots:
-        void newPacketReceived(DataPacket *packet);
-        void clientUsageChanged(QIODevice* device, bool used);
-
-    private:
+    private slots:
         // protocol handler methods
-        void handleLogin(DataPacket *dataPacket, Protocol::Packet *protocolPacket);
-        void handleUserMessage(DataPacket *dataPacket, Protocol::Packet *protocolPacket);
+        void handleLogin(DataPacket* dataPacket);
+        void handleUserMessage(DataPacket* rpcPacket);
 };
 
 #endif // SQMPACKETPROCESSOR_H
