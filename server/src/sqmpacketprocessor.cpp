@@ -14,14 +14,17 @@
 
 SQMPacketProcessor::SQMPacketProcessor(QObject *parent) : QObject(parent)
 {
+    // construct user manager
+    this->managerUser = new Usermanager(Global::getERPCInstance(), this);
+
     // register needed RPC methods
-    EleaphProtoRPC *eleaphRPC = Global::getERPCInstance();
+    //EleaphProtoRPC *eleaphRPC = Global::getERPCInstance();
 
 }
 
 SQMPacketProcessor::~SQMPacketProcessor()
 {
-
+    delete this->managerUser;
 }
 
 

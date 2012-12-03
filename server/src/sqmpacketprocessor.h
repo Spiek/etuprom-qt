@@ -21,22 +21,19 @@ class SQMPacketProcessor;
 #include "EleaphProtoRpc"
 #include "global.h"
 
+// forward delclarion, becuase of cyrcle including of the usermanager!
+class Usermanager;
+
 class SQMPacketProcessor : public QObject
 {
     Q_OBJECT
-    struct User
-    {
-        qint32 id;
-        QString userName;
-        qint32 state;
-        bool online;
-        bool visible;
-    };
-
     public:
         // con/decon
         SQMPacketProcessor(QObject *parent = 0);
         ~SQMPacketProcessor();
+
+    private:
+        Usermanager *managerUser;
 
     private slots:
         // protocol handler methods

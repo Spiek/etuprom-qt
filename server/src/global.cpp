@@ -9,7 +9,6 @@
 // init static vars
 SQMPacketProcessor* Global::packetProcessor = 0;
 EleaphProtoRPC* Global::eleaphRPC = 0;
-Usermanager* Global::userManager = 0;
 DatabaseHelper* Global::databaseHelper = 0;
 
 bool Global::init = false;
@@ -40,9 +39,6 @@ void Global::initialize()
     // initialize eleaph-proto-RPC-System
     Global::eleaphRPC = new EleaphProtoRPC(app, 65536);
 
-    // initialize Usermanager
-    Global::userManager = new Usermanager(app);
-
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(app);
 
@@ -61,11 +57,6 @@ SQMPacketProcessor* Global::getPPInstance()
 EleaphProtoRPC* Global::getERPCInstance()
 {
     return Global::eleaphRPC;
-}
-
-Usermanager* Global::getUserManager()
-{
-    return Global::userManager;
 }
 
 DatabaseHelper* Global::getDatabaseHelper()

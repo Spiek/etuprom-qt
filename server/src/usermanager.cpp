@@ -6,11 +6,14 @@
  
 #include "usermanager.h"
 
-Usermanager::Usermanager(QObject *parent) : QObject(parent)
+Usermanager::Usermanager(EleaphProtoRPC *eleaphRpc, QObject *parent) : QObject(parent)
 {
+    // save eleaphrpc
+    this->eleaphRpc = eleaphRpc;
+
     // handle client disconnects
-    this->connect(Global::getERPCInstance(), SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
-    Global::getERPCInstance()->registerRPCMethod("login", this, SLOT(handleLogin(DataPacket*)));
+    this->connect(eleaphRpc, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
+    eleaphRpc->registerRPCMethod("login", this, SLOT(handleLogin(DataPacket*)));
 }
 
 Usermanager::~Usermanager()
@@ -205,7 +208,7 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     }
 
     // add user to the usermanager
-    Global::getUserManager()->addUser(dataPacket->ioPacketDevice, user);
+    this->addUser(dataPacket->ioPacketDevice, user);
 
     // send the user information about the user who want to login
     Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "user", user->SerializeAsString());

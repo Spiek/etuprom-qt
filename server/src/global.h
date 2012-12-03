@@ -13,11 +13,7 @@
 // own libs
 #include "sqmpacketprocessor.h"
 #include "databasehelper.h"
-#include "usermanager.h"
 #include "EleaphProtoRpc"
-
-// forward delclarion, becuase of cyrcle including of the usermanager!
-class Usermanager;
 
 class Global
 {
@@ -28,7 +24,6 @@ class Global
         // global object getter
         static SQMPacketProcessor* getPPInstance();
         static EleaphProtoRPC* getERPCInstance();
-        static Usermanager* getUserManager();
         static DatabaseHelper* getDatabaseHelper();
 
     private:
@@ -38,7 +33,6 @@ class Global
 
         // SINGELTON objects
         static SQMPacketProcessor *packetProcessor;
-        static Usermanager *userManager;
         static EleaphProtoRPC *eleaphRPC;
         static DatabaseHelper* databaseHelper;
 };

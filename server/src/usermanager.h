@@ -27,7 +27,7 @@ class Usermanager : public QObject
     Q_OBJECT
     public:
         // con and decon
-        Usermanager(QObject *parent = 0);
+        Usermanager(EleaphProtoRPC *eleaphRpc, QObject *parent = 0);
         ~Usermanager();
 
         // protocol helper methods
@@ -48,6 +48,7 @@ class Usermanager : public QObject
     private:
         QMap<QIODevice*, Protocol::User*> mapSocketUser;
         QMap<qint32, QPair<QIODevice*, Protocol::User*> > mapIdUser;
+        EleaphProtoRPC *eleaphRpc;
 
     private slots:
         void handle_client_disconnect(QIODevice *device);
