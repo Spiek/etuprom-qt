@@ -18,6 +18,7 @@
 #include <QtSql/QSqlQuery>
 
 // own libs
+#include "EleaphProtoRpc"
 #include "protocol.pb.h"
 #include "global.h"
 
@@ -50,6 +51,7 @@ class Usermanager : public QObject
 
     private slots:
         void handle_client_disconnect(QIODevice *device);
+        void handleLogin(DataPacket* dataPacket);
 };
 
 #endif // USERMANAGER_H

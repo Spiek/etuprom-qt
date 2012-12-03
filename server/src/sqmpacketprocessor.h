@@ -40,7 +40,6 @@ class SQMPacketProcessor : public QObject
 
     private slots:
         // protocol handler methods
-        void handleLogin(DataPacket* dataPacket);
         void handleUserMessage(DataPacket* rpcPacket);
 };
 
