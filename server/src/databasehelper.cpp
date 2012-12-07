@@ -133,9 +133,10 @@ bool DatabaseHelper::getAllOnlineContactsByUserId(qint32 userId, Protocol::Users
     QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::SELECT)->
             SelectTable("user")->
             SelectField("userlist", "group", "contact.group")->
-            Join("user", "userlist", "user.id = userlist.user_id OR user.id = userlist.user_id_onlist")->
-            Where("userlist", "user_id", QString::number(userId), true, "AND")->
+            Join("user", "userlist", "userlist.user_id = " + QString::number(userId) + " OR userlist.user_id_onlist = " + QString::number(userId))->
+            Where("user", "id", QString::number(userId), true, "AND", "!=")->
             Where("user", "online", QString::number(1), true)->
+            GroupBy("user", "id")->
             toQuery();
 
     // exec query, if no data was found, return false

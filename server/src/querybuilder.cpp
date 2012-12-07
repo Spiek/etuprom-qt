@@ -170,7 +170,7 @@ QSqlQuery QueryBuilder::toQuery(QString strDatabaseIntefier, bool killMyself)
 // Universal Query functions
 //
 
-QueryBuilder* QueryBuilder::Where(QString strTable, QString strField, QString strValue, bool isNumeric, QString strOpperator, int level)
+QueryBuilder* QueryBuilder::Where(QString strTable, QString strField, QString strValue, bool isNumeric, QString strOpperator, QString strLogicOpperator, int level)
 {
     // create condition
     if(!this->mapWhereConditions.contains(level)) {
@@ -181,6 +181,7 @@ QueryBuilder* QueryBuilder::Where(QString strTable, QString strField, QString st
     condition.strColumn = strField;
     condition.strValue = strValue;
     condition.strOpperator = strOpperator;
+    condition.strLogicOpperator = strLogicOpperator;
     condition.isNumeric = isNumeric;
     this->mapWhereConditions.value(level)->append(condition);
 
@@ -311,7 +312,7 @@ QueryBuilder* QueryBuilder::GroupBy(QString strTable, QString strColumn)
     return this;
 }
 
-QueryBuilder* QueryBuilder::Having(QString strTable, QString strField, QString strValue, QString strOpperator, int level, bool isNumeric)
+QueryBuilder* QueryBuilder::Having(QString strTable, QString strField, QString strValue, QString strOpperator, QString strLogicOpperator,  int level, bool isNumeric)
 {
     // create condition
     if(!this->mapHavingConditions.contains(level)) {
@@ -322,6 +323,7 @@ QueryBuilder* QueryBuilder::Having(QString strTable, QString strField, QString s
     condition.strColumn = strField;
     condition.strValue = strValue;
     condition.strOpperator = strOpperator;
+    condition.strLogicOpperator = strLogicOpperator;
     condition.isNumeric = isNumeric;
     this->mapHavingConditions.value(level)->append(condition);
 
@@ -474,7 +476,7 @@ void QueryBuilder::constructQueryPart_Condition(QString* strQuery, QMap<int, QLi
             if(operatorPossible) {
                 strWhere += QString("%1").arg(" " + strLastOperator + " ");
             }
-            strWhere += QString("%1.%2 = %3").arg(condition.strTable, condition.strColumn, condition.isNumeric ? condition.strValue : '"' + condition.strValue + '"');
+            strWhere += QString("%1.%2 %4 %3").arg(condition.strTable, condition.strColumn, condition.isNumeric ? condition.strValue : '"' + condition.strValue + '"', condition.strLogicOpperator);
             operatorPossible = true;
             strLastOperator = condition.strOpperator;
         }

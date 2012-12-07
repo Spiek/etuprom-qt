@@ -63,6 +63,7 @@ class QueryBuilder
             QString strValue;
             bool isNumeric;
             QString strOpperator;
+            QString strLogicOpperator;
         };
 
     public:
@@ -86,7 +87,7 @@ class QueryBuilder
         QSqlQuery toQuery(QString strDatabaseIntefier = "", bool killMyself = true);
 
         // Universal Query functions
-        QueryBuilder* Where(QString strTable, QString strField, QString strValue, bool isNumeric = false, QString strOpperator = "AND", int level = 1);
+        QueryBuilder* Where(QString strTable, QString strField, QString strValue, bool isNumeric = false, QString strOpperator = "AND", QString strLogicOpperator = "=", int level = 1);
         QueryBuilder* OrderBy(QString strTable, QString strColumn, QueryBuilder::OrderType orderType = QueryBuilder::ASC);
         QueryBuilder* Limit(int limit = -1);
 
@@ -97,7 +98,7 @@ class QueryBuilder
         QueryBuilder* Join(QString strTable, QueryBuilder::JoinType type = QueryBuilder::INNER);
         QueryBuilder* Join(QString strTableSrc, QString strTableTarget, QString strOnCondition, QueryBuilder::JoinType type = QueryBuilder::INNER);
         QueryBuilder* GroupBy(QString strTable, QString strColumn);
-        QueryBuilder* Having(QString strTable, QString strField, QString strValue, QString strOpperator = "AND", int level = 1, bool isNumeric = false);
+        QueryBuilder* Having(QString strTable, QString strField, QString strValue, QString strOpperator = "AND", QString strLogicOpperator = "=",  int level = 1, bool isNumeric = false);
 
         // Update Query functions
         QueryBuilder* Update(QString strTable);
