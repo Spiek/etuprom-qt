@@ -13,13 +13,13 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 {
     ui->setupUi(this);
 
-    // if error message was set, set error message and reconstruct server socket
+    // if error message was set, set error message
     if(!strErrorMessage.isEmpty()) {
         this->ui->statusbar->showMessage(strErrorMessage);
     }
 
     // only allow unconnected sockets, reset all other socket states to have a clear state
-    if(Global::socketServer->state() !=  QTcpSocket::UnconnectedState) {
+    if(Global::socketServer->state() != QTcpSocket::UnconnectedState) {
         Global::socketServer->disconnectFromHost();
     }
 
@@ -35,7 +35,7 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     this->connect(this->ui->pushButtonLogin, SIGNAL(clicked()), this, SLOT(login()));
 
     // signal --> slot connections (PacketProcessor)
-    this->connect(Global::packetProcessor, SIGNAL(loginResponse(bool)), this, SLOT(loginRequestReceived(bool)));
+    Global::eleaphRpc->registerRPCMethod("login", this, SLOT(loginResponse(DataPacket*)));
 
     // connect to server
     // Note: it could happen that the class was constructed in an event from the QTcpSocket (like the QTcpSocket::error() slot),
@@ -74,17 +74,14 @@ void LoginForm::login()
     this->ui->statusbar->showMessage("Login...");
 
     // create login protobuf objects and send it to the server
-    // create packet container
-    Protocol::Packet packet;
-    packet.set_packettype(Protocol::Packet_PacketType_LoginRequest);
-
-    // create login packet
-    Protocol::LoginRequest *login = packet.mutable_requestlogin();
-    login->set_username(this->ui->lineEditLogin->text().toUtf8().constData());
-    login->set_password(QCryptographicHash::hash(this->ui->lineEditPassword->text().toAscii(), QCryptographicHash::Sha1).toHex().constData());
+    // create packet LoginRequest
+    Protocol::LoginRequest requestLogin;
+    requestLogin.set_username(this->ui->lineEditLogin->text().toStdString());
+    QByteArray baPasswordHash = QCryptographicHash::hash(this->ui->lineEditPassword->text().toUtf8(), QCryptographicHash::Sha1).toHex();
+    requestLogin.set_password(baPasswordHash.data());
 
     // send protobuf packet container as Length-Prefix-packet over the stream
-    Global::packetHandler->sendDataPacket(Global::socketServer, packet.SerializeAsString());
+    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "login", requestLogin.SerializeAsString());
 }
 
 
@@ -116,10 +113,13 @@ void LoginForm::serverConnectionError(QAbstractSocket::SocketError socketError)
     QTimer::singleShot(3000, this, SLOT(connectToServer()));
 }
 
-void LoginForm::loginRequestReceived(bool loggedin)
+void LoginForm::loginResponse(DataPacket *dataPacket)
 {
+    Protocol::LoginResponse responseLogin;
+    responseLogin.ParseFromArray(dataPacket->baRawPacketData->data(), dataPacket->baRawPacketData->length());
+
     // inform the user about login wasn't success, reset the password, and let the user login again :-)
-    if(!loggedin) {
+    if(responseLogin.type() == Protocol::LoginResponse_Type_LoginIncorect) {
         this->ui->statusbar->showMessage("Login failed, username or password wrong, please try again...");
         this->ui->lineEditPassword->clear();
         this->ui->centralwidget->setDisabled(false);
@@ -127,8 +127,7 @@ void LoginForm::loginRequestReceived(bool loggedin)
 
     // login was success, close login form and jump to MainWindow
     else {
-        MainWindow *mainWindow = new MainWindow;
-        mainWindow->show();
+        Global::formMain->show();
         this->deleteLater();
     }
 }

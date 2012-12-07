@@ -44,7 +44,7 @@ class LoginForm : public QMainWindow
         void login();
 
         // PacketProcessor
-        void loginRequestReceived(bool loggedin);
+        void loginResponse(DataPacket* dataPacket);
 
         // Socket slots
         void serverConnectionSuccessfull();

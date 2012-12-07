@@ -15,9 +15,8 @@ DatabaseHelper::DatabaseHelper(QString strDatabaseInitialzer)
     // save database initializer
     this->strDatabaseInitialzer = strDatabaseInitialzer;
 
-    // read table definations
-    this->queryBuilder = new QueryBuilder(strDatabaseInitialzer);
-    this->queryBuilder->updateTableSchemaCache();
+    // init query builder
+    QueryBuilder::initialize("sqm");
 }
 
 
@@ -27,30 +26,20 @@ DatabaseHelper::DatabaseHelper(QString strDatabaseInitialzer)
 
 bool DatabaseHelper::getUserById(qint32 userId, Protocol::User* user)
 {
-    // simplefy table name
-    QString strTableName = "user";
-
-    // query: construct expressions
-    this->queryBuilder->clear(QueryBuilder::SELECT);
-    if(!this->queryBuilder->addSelectExpressionTable(strTableName)) {
-        qWarning("[%s][%d] - Can not add table Expression for table \"%s\"", __PRETTY_FUNCTION__ , __LINE__, qPrintable(strTableName));
-        return false;
-    }
-    // query: add where conditions to query
-    this->queryBuilder->addWhereCondition(strTableName, "id", QString::number(userId), true);
-
-    // query: build
-    QString strQuery = this->queryBuilder->buildQuery();
+    // construct query
+    QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::SELECT)->
+            SelectTable("user")->
+            Where("user", "id", QString::number(userId), true)->
+            toQuery();
 
     // exec query, if no data was found, return false
-    QSqlQuery query = this->buildQuery(strQuery);
     if(!query.next()) {
         return false;
     }
 
     // convert result to protobuf message
     if(!DatabaseHelper::queryToProtobufMessage(query, user)) {
-        qWarning("[%s][%d] - Cannot convert Query for %s To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__, qPrintable(strTableName));
+        qWarning("[%s][%d] - Cannot convert Query To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__);
         return false;
     }
 
@@ -60,31 +49,21 @@ bool DatabaseHelper::getUserById(qint32 userId, Protocol::User* user)
 
 bool DatabaseHelper::getUserByIdUserNameAndPw(QString strUsername, QString strPassword, Protocol::User* user)
 {
-    // simplefy table name
-    QString strTableName = "user";
-
-    // query: construct expressions
-    this->queryBuilder->clear(QueryBuilder::SELECT);
-    if(!this->queryBuilder->addSelectExpressionTable(strTableName)) {
-        qWarning("[%s][%d] - Can not add table Expression for table \"%s\"", __PRETTY_FUNCTION__ , __LINE__, qPrintable(strTableName));
-        return false;
-    }
-    // query: add where conditions to query
-    this->queryBuilder->addWhereCondition(strTableName, "username", strUsername, false, "AND");
-    this->queryBuilder->addWhereCondition(strTableName, "password", strPassword);
-
-    // query: build
-    QString strQuery = this->queryBuilder->buildQuery();
+    // construct query
+    QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::SELECT)->
+            SelectTable("user")->
+            Where("user", "username", strUsername, false, "AND")->
+            Where("user", "password", strPassword)->
+            toQuery();
 
     // exec query, if no data was found, return false
-    QSqlQuery query = this->buildQuery(strQuery);
     if(!query.next()) {
         return false;
     }
 
     // convert result to protobuf message
     if(!DatabaseHelper::queryToProtobufMessage(query, user)) {
-        qWarning("[%s][%d] - Cannot convert Query for %s To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__, qPrintable(strTableName));
+        qWarning("[%s][%d] - Cannot convert Query To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__);
         return false;
     }
 
@@ -99,32 +78,22 @@ bool DatabaseHelper::getUserByIdUserNameAndPw(QString strUsername, QString strPa
 
 bool DatabaseHelper::getContactsByUserId(qint32 userId, Protocol::ContactList* contactList)
 {
-    // simplefy table name
-    QString strTableName = "user";
-
-    // query: construct expressions
-    this->queryBuilder->clear(QueryBuilder::SELECT);
-    if(!this->queryBuilder->addSelectExpressionTable(strTableName)) {
-        qWarning("[%s][%d] - Can not add table Expression for table \"%s\"", __PRETTY_FUNCTION__ , __LINE__, qPrintable(strTableName));
-        return false;
-    }
-    this->queryBuilder->addSelectExpression("userlist", "group", "contact.group");
-
-    // query: add where conditions to query
-    this->queryBuilder->addWhereCondition("userlist", "user_id", QString::number(userId), true);
-
-    // query: build
-    QString strQuery = this->queryBuilder->buildQuery();
+    // construct query
+    QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::SELECT)->
+            SelectTable("user")->
+            SelectField("userlist", "group", "contact.group")->
+            Join("userlist")->
+            Where("userlist", "user_id", QString::number(userId), true)->
+            toQuery();
 
     // exec query, if no data was found, return false
-    QSqlQuery query = this->buildQuery(strQuery);
     if(!query.next()) {
         return false;
     }
 
     // convert result to protobuf message
     if(!DatabaseHelper::queryToProtobufMessage(query, contactList)) {
-        qWarning("[%s][%d] - Cannot convert Query for %s To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__, qPrintable(strTableName));
+        qWarning("[%s][%d] - Cannot convert Query To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__);
         return false;
     }
 
@@ -134,33 +103,49 @@ bool DatabaseHelper::getContactsByUserId(qint32 userId, Protocol::ContactList* c
 
 bool DatabaseHelper::getOnlineContactsByUserId(qint32 userId, Protocol::Users* users)
 {
-    // simplefy table name
-    QString strTableName = "user";
-
-    // query: construct expressions
-    this->queryBuilder->clear(QueryBuilder::SELECT);
-    if(!this->queryBuilder->addSelectExpressionTable(strTableName)) {
-        qWarning("[%s][%d] - Can not add table Expression for table \"%s\"", __PRETTY_FUNCTION__ , __LINE__, qPrintable(strTableName));
-        return false;
-    }
-    this->queryBuilder->addSelectExpression("userlist", "group", "contact.group");
-
-    // query: add where conditions to query
-    this->queryBuilder->addWhereCondition("userlist", "user_id", QString::number(userId), true, "AND");
-    this->queryBuilder->addWhereCondition(strTableName, "online", QString::number(1), true);
-
-    // query: build
-    QString strQuery = this->queryBuilder->buildQuery();
+    // construct query
+    QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::SELECT)->
+            SelectTable("user")->
+            SelectField("userlist", "group", "contact.group")->
+            Join("userlist")->
+            Where("userlist", "user_id", QString::number(userId), true, "AND")->
+            Where("user", "online", QString::number(1), true)->
+            toQuery();
 
     // exec query, if no data was found, return false
-    QSqlQuery query = this->buildQuery(strQuery);
     if(!query.next()) {
         return false;
     }
 
     // convert result to protobuf message
     if(!DatabaseHelper::queryToProtobufMessage(query, users)) {
-        qWarning("[%s][%d] - Cannot convert Query for %s To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__, qPrintable(strTableName));
+        qWarning("[%s][%d] - Cannot convert Query To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__);
+        return false;
+    }
+
+    // all okay, return true
+    return true;
+}
+
+bool DatabaseHelper::getAllOnlineContactsByUserId(qint32 userId, Protocol::Users* users)
+{
+    // construct query
+    QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::SELECT)->
+            SelectTable("user")->
+            SelectField("userlist", "group", "contact.group")->
+            Join("user", "userlist", "user.id = userlist.user_id OR user.id = userlist.user_id_onlist")->
+            Where("userlist", "user_id", QString::number(userId), true, "AND")->
+            Where("user", "online", QString::number(1), true)->
+            toQuery();
+
+    // exec query, if no data was found, return false
+    if(!query.next()) {
+        return false;
+    }
+
+    // convert result to protobuf message
+    if(!DatabaseHelper::queryToProtobufMessage(query, users)) {
+        qWarning("[%s][%d] - Cannot convert Query To Protobuf Message", __PRETTY_FUNCTION__ , __LINE__);
         return false;
     }
 
@@ -175,55 +160,26 @@ bool DatabaseHelper::getOnlineContactsByUserId(qint32 userId, Protocol::Users* u
 
 bool DatabaseHelper::updateUserById(Protocol::User *user)
 {
-    // simplefy table name
-    QString strTableName = "user";
+    // construct query
+    QueryBuilder* queryBuilder = QueryBuilder::initQuery(QueryBuilder::UPDATE)->
+            Update("user")->
+            Where("user", "id", QString::number(user->id()), true);
+    QSqlQuery query = this->createUpdateQueryForProtbuf(queryBuilder, user)->toQuery();
 
-    // query: construct expressions
-    this->queryBuilder->clear(QueryBuilder::UPDATE);
-
-    // query: set database table
-    this->queryBuilder->setUpdateTable(strTableName);
-
-    // query: build where condition on id
-    this->queryBuilder->addWhereCondition(strTableName, "id", QString::number(user->id()), true);
-
-    // query: build update fields for entire protobuf message user
-    this->createUpdateQueryForProtbuf(user);
-
-    // query: build
-    QString strQuery = this->queryBuilder->buildQuery();
-
-    // exec query, if no data was found, return false
-    QSqlQuery query = this->buildQuery(strQuery);
-
-    // return query executing result
+    // exec query and return resulr
     return query.exec();
 }
 
 bool DatabaseHelper::updateUserOnlineStateById(Protocol::User *user, bool onlineState)
 {
-    // simplefy table name
-    QString strTableName = "user";
+    // construct query
+    QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::UPDATE)->
+            Update("user")->
+            UpdateField("online", onlineState ? "1" : "0", true)->
+            Where("user", "id", QString::number(user->id()), true)->
+            toQuery();
 
-    // query: construct expressions
-    this->queryBuilder->clear(QueryBuilder::UPDATE);
-
-    // query: set database table
-    this->queryBuilder->setUpdateTable(strTableName);
-
-    // query: build where condition on id
-    this->queryBuilder->addWhereCondition(strTableName, "id", QString::number(user->id()), true);
-
-    // query: set update field online
-    this->queryBuilder->addUpdateField("online", onlineState ? "1" : "0", true);
-
-    // query: build
-    QString strQuery = this->queryBuilder->buildQuery();
-
-    // exec query, if no data was found, return false
-    QSqlQuery query = this->buildQuery(strQuery);
-
-    // return query executing result
+    // exec query and return resulr
     return query.exec();
 }
 
@@ -383,7 +339,7 @@ bool DatabaseHelper::setFieldValueByFieldDescriptor(google::protobuf::Message *m
 // protobuf query helpers
 //
 
-void DatabaseHelper::createUpdateQueryForProtbuf(google::protobuf::Message *message)
+QueryBuilder* DatabaseHelper::createUpdateQueryForProtbuf(QueryBuilder* queryBuilder, google::protobuf::Message *message)
 {
     // simplefy some protobuf classes
     const google::protobuf::Descriptor *descriptor = message->GetDescriptor();
@@ -400,8 +356,11 @@ void DatabaseHelper::createUpdateQueryForProtbuf(google::protobuf::Message *mess
 
         // get value and build update query
         QVariant varValue = this->getFieldValueByFieldDescriptor(message, fieldDescriptor);
-        this->queryBuilder->addUpdateField(QString::fromStdString(fieldDescriptor->name()).toLower(), typeCpp == google::protobuf::FieldDescriptor::CPPTYPE_STRING ? '"' + varValue.toString() + '"' : varValue.toString());
+        queryBuilder->UpdateField(QString::fromStdString(fieldDescriptor->name()).toLower(), typeCpp == google::protobuf::FieldDescriptor::CPPTYPE_STRING ? '"' + varValue.toString() + '"' : varValue.toString());
     }
+
+    // just return the updated querybuilder
+    return queryBuilder;
 }
 
 

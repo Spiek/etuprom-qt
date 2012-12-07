@@ -6,24 +6,34 @@
  
 #include "querybuilder.h"
 
-QueryBuilder::QueryBuilder(QString strDatabaseIntefier)
-{
-    // save database intentifier
-    this->strDatabaseIntefier = strDatabaseIntefier;
-    this->intLimit = -1;
-}
+// init static values
+QMap<QString, QMap<QString, QVariant::Type> > QueryBuilder::mapTableSchema;
+QString QueryBuilder::strDatabaseIntefier;
+QMap<QString, QueryBuilder::SelectAssociation> QueryBuilder::mapSelectAssociations;
+bool QueryBuilder::boolIsInitalized = false;
 
 //
-// Query functions
+// static initializer
 //
 
-void QueryBuilder::updateTableSchemaCache()
+bool QueryBuilder::initialize(QString strDatabaseIntefier)
 {
-    // select all tables and loop one by one
-    QSqlDatabase database = QSqlDatabase::database(this->strDatabaseIntefier);
+    // exit if the Querybuilder was allready successfull initalized
+    if(QueryBuilder::boolIsInitalized) {
+        return true;
+    }
+
+    // initialize Database
+    QueryBuilder::strDatabaseIntefier = strDatabaseIntefier;
+    QSqlDatabase database = QSqlDatabase::database(strDatabaseIntefier);
+
+    // exit here if database couldn't be opened
+    if(!database.isOpen() && !database.open()) {
+        return false;
+    }
 
     // loop all tables
-    this->mapTableSchema.clear();
+    QueryBuilder::mapTableSchema.clear();
     foreach(QString strTable, database.tables()) {
         // skip database_associations
         if(strTable == "database_associations") {
@@ -44,67 +54,52 @@ void QueryBuilder::updateTableSchemaCache()
         }
 
         // add table defination
-        this->mapTableSchema.insert(strTable, mapColumns);
+        QueryBuilder::mapTableSchema.insert(strTable, mapColumns);
     }
 
     // read database_associations
     QSqlQuery queryAssociations("SELECT * FROM database_associations", database);
     while(queryAssociations.next()) {
         // fill SELECTAssociation struct
-        QueryBuilder::SELECTAssociation selectAssociation;
+        QueryBuilder::SelectAssociation selectAssociation;
         selectAssociation.strTable = queryAssociations.value(1).toString();
         selectAssociation.strColumn = queryAssociations.value(2).toString();
         selectAssociation.strJoinTable = queryAssociations.value(3).toString();
         selectAssociation.strJoinColumn = queryAssociations.value(4).toString();
-        selectAssociation.enumRelation = queryAssociations.value(5).toString() == "hasOne" ? QueryBuilder::SELECTAssociation::hasOne : (queryAssociations.value(4).toString() == "hasMany") ? QueryBuilder::SELECTAssociation::hasMany : QueryBuilder::SELECTAssociation::belongsTo;
+        selectAssociation.enumRelation = queryAssociations.value(5).toString() == "hasOne" ? QueryBuilder::SelectAssociation::hasOne : (queryAssociations.value(5).toString() == "hasMany") ? QueryBuilder::SelectAssociation::hasMany : QueryBuilder::SelectAssociation::belongsTo;
 
         // save Association
-        this->mapSelectAssociations.insert(selectAssociation.strTable, selectAssociation);
+        QueryBuilder::mapSelectAssociations.insert(selectAssociation.strTable, selectAssociation);
     }
+
+    // initial done and everything is okay
+    QueryBuilder::boolIsInitalized = true;
+    return true;
 }
 
-void QueryBuilder::createNewQuery(QueryBuilder::QueryType queryType)
+QueryBuilder* QueryBuilder::initQuery(QueryBuilder::QueryType queryType)
 {
-    // clear pref. constructed query
-    this->clear();
+    // construct query
+    return new QueryBuilder(queryType);
+}
 
+
+//
+// (De)Constructors
+//
+
+QueryBuilder::QueryBuilder(QueryBuilder::QueryType queryType)
+{
     // save current query type
     this->currentQueryType = queryType;
-}
-
-void QueryBuilder::clear(QueryBuilder::QueryType queryType)
-{
-    // set new query type
-    this->currentQueryType = queryType;
-
-    // Cleanup
-    // Global
-    qDeleteAll(this->mapWhereConditions);
-    this->mapWhereConditions.clear();
-
-    // Select
-    this->strFromTable.clear();
-    this->mapJoins.clear();
-    this->mapSelectExpressions.clear();
-    this->lstGroupBy.clear();
-    qDeleteAll(this->mapHavingConditions);
-    this->mapHavingConditions.clear();
-    this->lstOrderBy.clear();
     this->intLimit = -1;
-
-    // Update
-    this->strUpdateTable.clear();
-    this->lstUpdateFields.clear();
-
-    // Insert
-    this->strInsertTable.clear();
-    this->mapInsertFields.clear();
-    this->strDeleteTable.clear();
-
-
 }
 
-QString QueryBuilder::buildQuery()
+//
+// Build functions
+//
+
+QString QueryBuilder::toString(bool killMyself)
 {
     // build query
     QString strQuery;
@@ -150,7 +145,24 @@ QString QueryBuilder::buildQuery()
         strQuery.append(" LIMIT " + QString::number(this->intLimit));
     }
 
+    // if user want to kill myself, so do it
+    if(killMyself) {
+        delete this;
+    }
+
     return strQuery;
+}
+
+QSqlQuery QueryBuilder::toQuery(QString strDatabaseIntefier, bool killMyself)
+{
+    // if user want to kill myself, so do it
+    QString strQuery = this->toString(false);
+    if(killMyself) {
+        delete this;
+    }
+
+    // construct sql query, if strDatabaseIntefier is empty, take the QueryBuilder static database intentifier
+    return QSqlQuery(strQuery, QSqlDatabase::database(strDatabaseIntefier.isEmpty() ? QueryBuilder::strDatabaseIntefier : strDatabaseIntefier));
 }
 
 
@@ -158,7 +170,7 @@ QString QueryBuilder::buildQuery()
 // Universal Query functions
 //
 
-void QueryBuilder::addWhereCondition(QString strTable, QString strField, QString strValue, bool isNumeric, QString strOpperator, int level)
+QueryBuilder* QueryBuilder::Where(QString strTable, QString strField, QString strValue, bool isNumeric, QString strOpperator, int level)
 {
     // create condition
     if(!this->mapWhereConditions.contains(level)) {
@@ -171,6 +183,29 @@ void QueryBuilder::addWhereCondition(QString strTable, QString strField, QString
     condition.strOpperator = strOpperator;
     condition.isNumeric = isNumeric;
     this->mapWhereConditions.value(level)->append(condition);
+
+    // at the end, return myself
+    return this;
+}
+
+QueryBuilder* QueryBuilder::OrderBy(QString strTable, QString strColumn, QueryBuilder::OrderType orderType)
+{
+    // only add group by field, if it will be selected!
+    QString strOrderBy = QString("%1.%2").arg(strTable, strColumn);
+    if(this->mapSelectExpressions.contains(strOrderBy)) {
+       this->lstOrderBy.append(QString(" %1 %2").arg(strOrderBy, orderType == QueryBuilder::ASC ? "ASC" : "DESC"));
+    }
+
+    // at the end, return myself
+    return this;
+}
+
+QueryBuilder* QueryBuilder::Limit(int limit)
+{
+    this->intLimit = limit;
+
+    // at the end, return myself
+    return this;
 }
 
 
@@ -178,11 +213,11 @@ void QueryBuilder::addWhereCondition(QString strTable, QString strField, QString
 // Select Query functions
 //
 
-bool QueryBuilder::addSelectExpressionTable(QString strTable, QString strTableAlias, QueryBuilder::JoinType joinTypeIfNeccessary)
+QueryBuilder* QueryBuilder::SelectTable(QString strTable, QString strTableAlias, QueryBuilder::JoinType joinTypeIfNeccessary)
 {
     // exist if table doesn't exist
     if(!this->mapTableSchema.contains(strTable)) {
-        return false;
+        return this;
     }
 
     // ...otherwise add table columns
@@ -192,34 +227,20 @@ bool QueryBuilder::addSelectExpressionTable(QString strTable, QString strTableAl
         this->mapSelectExpressions.insert(strExpression, strAlias);
     }
 
-    // set from table if not allready happened
+    // set from table if not allready set
     if(this->strFromTable.isEmpty()) {
         this->strFromTable = strTable;
     }
 
-    // if from table = added table, don't do a join
-    else if(this->strFromTable == strTable) {
-        return true;
-    }
-
-    // add a join if table is not the from table
-    else if(this->mapSelectAssociations.contains(strTable)) {
-        this->addSelectJoin(strTable, joinTypeIfNeccessary);
-    }
-
-    else {
-        return false;
-    }
-
-    // otherwise exit with error
-    return true;
+    // at the end, return myself
+    return this;
 }
 
-bool QueryBuilder::addSelectExpression(QString strTable, QString strColumn, QString strAlias, QueryBuilder::JoinType joinTypeIfNeccessary)
+QueryBuilder* QueryBuilder::SelectField(QString strTable, QString strColumn, QString strAlias, QueryBuilder::JoinType joinTypeIfNeccessary)
 {
     // exit if table and column doesn't exist in database
     if(!this->mapTableSchema.contains(strTable) || !this->mapTableSchema.value(strTable).contains(strColumn)) {
-        return false;
+        return this;
     }
 
     // build column expression
@@ -232,55 +253,65 @@ bool QueryBuilder::addSelectExpression(QString strTable, QString strColumn, QStr
     }
     this->mapSelectExpressions.insert(strExpression, strColumnAlias);
 
-    // set from table if not allready happened
+    // set from table if not allready set
     if(this->strFromTable.isEmpty()) {
         this->strFromTable = strTable;
     }
 
-    // if from table = added table, don't do a join
-    else if(this->strFromTable == strTable) {
-        return true;
-    }
-
-    // add a join if table is not the from table
-    else if(this->mapSelectAssociations.contains(strTable)) {
-        this->addSelectJoin(strTable, joinTypeIfNeccessary);
-    }
-
-    else {
-        return false;
-    }
-
-    // otherwise exit with error
-    return true;
+    // at the end, return myself
+    return this;
 }
 
-bool QueryBuilder::addSelectJoin(QString strTable, QueryBuilder::JoinType type)
+QueryBuilder* QueryBuilder::From(QString strTable)
 {
-    // if join is not defined in assioaction table, exit here
-    if(!this->mapSelectAssociations.contains(strTable)) {
-        return false;
+    // ony add table if it does exist
+    if(QueryBuilder::mapTableSchema.contains(strTable)) {
+        this->strFromTable = strTable;
     }
 
-    // otherwise save the join
-    this->mapJoins.insert(strTable, type);
-    return true;
+    // at the end, return myself
+    return this;
 }
 
-bool QueryBuilder::addSelectGroupBy(QString strTable, QString strColumn)
+QueryBuilder* QueryBuilder::Join(QString strTable, QueryBuilder::JoinType type)
 {
-    // if we don't select the group by field, return false
+    // only create join if join is defined in assioaction table
+    if(this->mapSelectAssociations.contains(strTable)) {
+        JoinData join;
+        join.joinType = type;
+        this->mapJoins.insert(strTable, join);
+    }
+
+    // at the end, return myself
+    return this;
+}
+
+QueryBuilder* QueryBuilder::Join(QString strTableSrc, QString strTableTarget, QString strOnCondition, QueryBuilder::JoinType type)
+{
+    // add (blind) join
+    JoinData join;
+    join.strTargetTable = strTableTarget;
+    join.joinType = type;
+    join.strOnCondition = strOnCondition;
+    this->mapJoins.insert(strTableSrc, join);
+
+    // at the end, return myself
+    return this;
+}
+
+QueryBuilder* QueryBuilder::GroupBy(QString strTable, QString strColumn)
+{
+    // only add groupby Field if we select it!
     QString strGroupBy = QString("%1.%2").arg(strTable, strColumn);
-    if(!this->mapSelectExpressions.contains(QString("%1.%2").arg(strTable, strColumn))) {
-        return false;
+    if(this->mapSelectExpressions.contains(QString("%1.%2").arg(strTable, strColumn))) {
+        this->lstGroupBy.append(strGroupBy);
     }
 
-    // otherwise add the group by field to list
-    this->lstGroupBy.append(strGroupBy);
-    return true;
+    // at the end, return myself
+    return this;
 }
 
-void QueryBuilder::addSelectHavingCondition(QString strTable, QString strField, QString strValue, QString strOpperator, int level, bool isNumeric)
+QueryBuilder* QueryBuilder::Having(QString strTable, QString strField, QString strValue, QString strOpperator, int level, bool isNumeric)
 {
     // create condition
     if(!this->mapHavingConditions.contains(level)) {
@@ -293,24 +324,9 @@ void QueryBuilder::addSelectHavingCondition(QString strTable, QString strField, 
     condition.strOpperator = strOpperator;
     condition.isNumeric = isNumeric;
     this->mapHavingConditions.value(level)->append(condition);
-}
 
-bool QueryBuilder::addOrderBy(QString strTable, QString strColumn, QueryBuilder::OrderType orderType)
-{
-    // if we don't select the group by field, return false
-    QString strOrderBy = QString("%1.%2").arg(strTable, strColumn);
-    if(!this->mapSelectExpressions.contains(strOrderBy)) {
-        return false;
-    }
-
-    // add order by entry
-    this->lstOrderBy.append(QString(" %1 %2").arg(strOrderBy, orderType == QueryBuilder::ASC ? "ASC" : "DESC"));
-    return true;
-}
-
-void QueryBuilder::setLimit(int limit)
-{
-    this->intLimit = limit;
+    // at the end, return myself
+    return this;
 }
 
 
@@ -318,28 +334,26 @@ void QueryBuilder::setLimit(int limit)
 // Update Query functions
 //
 
-bool QueryBuilder::setUpdateTable(QString strTable)
+QueryBuilder* QueryBuilder::Update(QString strTable)
 {
-    // exist if table doesn't exist
-    if(!this->mapTableSchema.contains(strTable)) {
-        return false;
+    // only set update table if it does exist
+    if(this->mapTableSchema.contains(strTable)) {
+        this->strUpdateTable = strTable;
     }
 
-    // set update table
-    this->strUpdateTable = strTable;
-    return true;
+    // at the end, return myself
+    return this;
 }
 
-bool QueryBuilder::addUpdateField(QString strField, QString strValue, bool isNumeric)
+QueryBuilder* QueryBuilder::UpdateField(QString strField, QString strValue, bool isNumeric)
 {
-    // exist if table and column doesn't exist
-    if(!this->mapTableSchema.contains(this->strUpdateTable) || !this->mapTableSchema.value(this->strUpdateTable).contains(strField)) {
-        return false;
+    // only set update field if it does exist
+    if(this->mapTableSchema.contains(this->strUpdateTable) || !this->mapTableSchema.value(this->strUpdateTable).contains(strField)) {
+        this->lstUpdateFields.append(QString("%1 = %2").arg(strField, isNumeric ? strValue : '"' + strValue + '"'));
     }
 
-    // append field to list
-    this->lstUpdateFields.append(QString("%1 = %2").arg(strField, isNumeric ? strValue : '"' + strValue + '"'));
-    return true;
+    // at the end, return myself
+    return this;
 }
 
 
@@ -347,44 +361,41 @@ bool QueryBuilder::addUpdateField(QString strField, QString strValue, bool isNum
 // Insert Query functions
 //
 
-bool QueryBuilder::setInsertTable(QString strTable)
+QueryBuilder* QueryBuilder::Insert(QString strTable)
 {
-    // exist if table doesn't exist
-    if(!this->mapTableSchema.contains(strTable)) {
-        return false;
+    // only set insert table if it does exist
+    if(this->mapTableSchema.contains(strTable)) {
+        this->strInsertTable = strTable;
     }
 
-    // otherwise set insert table
-    this->strInsertTable = strTable;
-    return true;
+    // at the end, return myself
+    return this;
 }
 
-bool QueryBuilder::setInsertField(QString strFieldName, QString strValue, bool isNumeric)
+QueryBuilder* QueryBuilder::InsertField(QString strFieldName, QString strValue, bool isNumeric)
 {
-    // exist if table and column doesn't exist
-    if(!this->mapTableSchema.contains(this->strInsertTable) || !this->mapTableSchema.value(this->strInsertTable).contains(strFieldName)) {
-        return false;
+    // only set insert field if it does exist
+    if(this->mapTableSchema.contains(this->strInsertTable) || !this->mapTableSchema.value(this->strInsertTable).contains(strFieldName)) {
+        this->mapInsertFields.insert(strFieldName, isNumeric ? strValue : '"'  + strValue + '"');
     }
 
-    // otherwise add the field
-    this->mapInsertFields.insert(strFieldName, isNumeric ? strValue : '"'  + strValue + '"');
-    return true;
+    // at the end, return myself
+    return this;
 }
 
 //
 // Delete Query functions
 //
 
-bool QueryBuilder::setDeleteTable(QString strTable)
+QueryBuilder* QueryBuilder::Delete(QString strTable)
 {
-    // exist if table doesn't exist
-    if(!this->mapTableSchema.contains(strTable)) {
-        return false;
+    // only set delete table if it does exist
+    if(this->mapTableSchema.contains(strTable)) {
+        this->strDeleteTable = strTable;
     }
 
-    // otherwise set insert table
-    this->strDeleteTable = strTable;
-    return true;
+    // at the end, return myself
+    return this;
 }
 
 //
@@ -404,13 +415,21 @@ void QueryBuilder::constructQuery_Select(QString *strQuery)
 
     // build joins
     QString strJoin;
+    bool firstJoin = true;
     foreach(QString strJoinTable, this->mapJoins.keys()) {
         // create string join
-        QString strJoinType = this->mapJoins.value(strJoinTable) == QueryBuilder::INNER ? "INNER" : (this->mapJoins.value(strJoinTable) == QueryBuilder::LEFT ? "LEFT" : "RIGHT");
+        JoinData join = this->mapJoins.value(strJoinTable);
+        QString strJoinType = join.joinType == QueryBuilder::INNER ? "INNER" : (join.joinType == QueryBuilder::LEFT ? "LEFT" : "RIGHT");
 
-        // all other tables will be joined
-        foreach(QueryBuilder::SELECTAssociation selectAssociation, this->mapSelectAssociations.values(strJoinTable)) {
-            strJoin += QString(" %5 JOIN %1 ON %1.%2 = %3.%4 ").arg(selectAssociation.strTable, selectAssociation.strColumn, selectAssociation.strJoinTable, selectAssociation.strJoinColumn, strJoinType);
+        // join --> Associations
+        if(join.strOnCondition.isEmpty() && this->mapSelectAssociations.contains(strJoinTable)) {
+            foreach(QueryBuilder::SelectAssociation selectAssociation, this->mapSelectAssociations.values(strJoinTable)) {
+                strJoin += QString(" %5 JOIN %1 ON %1.%2 = %3.%4 ").arg(selectAssociation.strTable, selectAssociation.strColumn, selectAssociation.strJoinTable, selectAssociation.strJoinColumn, strJoinType);
+                firstJoin = false;
+            }
+        } else {
+            strJoin += QString(" %1 %2 JOIN %3 ON (%4)").arg((firstJoin ? "" : strJoinTable), strJoinType, join.strTargetTable, join.strOnCondition);
+            firstJoin = false;
         }
     }
     *strQuery += strJoin;

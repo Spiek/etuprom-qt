@@ -9,8 +9,11 @@
 // init static vars
 QTcpSocket* Global::socketServer = 0;
 SQMPacketProcessor* Global::packetProcessor = 0;
-SQMPacketHandler* Global::packetHandler = 0;
+EleaphProtoRPC* Global::eleaphRpc = 0;
 bool Global::init = false;
+
+// init forms
+MainWindow* Global::formMain = 0;
 
 // Fixme: make it dynamic with a config file
 QString Global::strServerHostname = "localhost";
@@ -30,15 +33,14 @@ void Global::initialize()
     Global::socketServer = new QTcpSocket(app);
 
     // init packet handler
-    SQMPacketHandler::create(app);
-    Global::packetHandler = SQMPacketHandler::getInstance();
-    Global::packetHandler->addDevice(Global::socketServer, SQMPacketHandler::NeverForgetDevice);
+    Global::eleaphRpc = new EleaphProtoRPC(app);
+    Global::eleaphRpc->addDevice(Global::socketServer, IEleaph::NeverForgetDevice);
 
     // initialize packet processor, which process the packets
-    Global::packetProcessor = new SQMPacketProcessor(Global::packetHandler);
+    Global::packetProcessor = new SQMPacketProcessor(app);
 
-    // connect packetHandler and packetProcessor
-    app->connect(Global::packetHandler, SIGNAL(newPacketReceived(DataPacket*)), Global::packetProcessor, SLOT(newPacketReceived(DataPacket*)));
+    // init main Window
+    Global::formMain = new MainWindow;
 
     // class was successfull initialized!
     Global::init = true;

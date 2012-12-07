@@ -20,8 +20,11 @@ MainWindow::MainWindow(QWidget *parent) :
     this->connect(Global::socketServer, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(serverConnectionError(QAbstractSocket::SocketError)));
 
     // signal --> slot connections (PacketProcessor)
-    this->connect(Global::packetProcessor, SIGNAL(userInformationsReceived(Protocol::UserInformations)), this, SLOT(userInformationsReceived(Protocol::UserInformations)));
-    this->connect(Global::packetProcessor, SIGNAL(userAltered(Protocol::User)), this, SLOT(contactListUserAltered(Protocol::User)));
+    Global::eleaphRpc->registerRPCMethod("contactlist", this, SLOT(handleContactList(DataPacket*)));
+    Global::eleaphRpc->registerRPCMethod("user_altered", this, SLOT(handleUserAltered(DataPacket*)));
+
+    //this->connect(Global::packetProcessor, SIGNAL(userInformationsReceived(Protocol::UserInformations)), this, SLOT(userInformationsReceived(Protocol::UserInformations)));
+    //this->connect(Global::packetProcessor, SIGNAL(userAltered(Protocol::User)), this, SLOT(contactListUserAltered(Protocol::User)));
 
     // handle double click event of new user
     this->connect(this->ui->treeWidgetContactList, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onUserClicked(QTreeWidgetItem*,int)));
@@ -36,21 +39,25 @@ MainWindow::~MainWindow()
 void MainWindow::serverConnectionError(QAbstractSocket::SocketError socketError)
 {
     // if client disconnect from server, inform the user about and jump back to login form
-    this->deleteLater();
+    this->hide();
     QString strErrorMessage = QString("Error \"%1\" occours, please relog...").arg(Global::socketServer->errorString());
     LoginForm *loginForm = new LoginForm(strErrorMessage);
     loginForm->show();
 }
 
-void MainWindow::userInformationsReceived(Protocol::UserInformations userInformations)
+void MainWindow::handleContactList(DataPacket *dataPacket)
 {
-    // toptreewidget items for the group assigment
-    QMap<QString, QTreeWidgetItem*> mapTopTreeWidgetItems;
+    // get contact list
+    Protocol::ContactList contactList;
+    contactList.ParseFromArray(dataPacket->baRawPacketData->data(), dataPacket->baRawPacketData->length());
+
+    // remove all users form contact list
+    this->ui->treeWidgetContactList->clear();
 
     // loop contacts in contact list and all needed gui elements
-    for(int i = 0;i<userInformations.contact_size();i++) {
+    for(int i = 0;i<contactList.contact_size();i++) {
         // simplefy contact
-        Protocol::Contact *contact = userInformations.mutable_contact(i);
+        Protocol::Contact *contact = contactList.mutable_contact(i);
 
         // setup user
         this->setupUser(contact->mutable_user(), QString::fromStdString(contact->group()));
@@ -59,6 +66,16 @@ void MainWindow::userInformationsReceived(Protocol::UserInformations userInforma
     // expand all groups
     this->ui->treeWidgetContactList->expandAll();
 }
+
+void MainWindow::handleUserAltered(DataPacket *dataPacket)
+{
+    Protocol::User user;
+    user.ParseFromArray(dataPacket->baRawPacketData->data(), dataPacket->baRawPacketData->length());
+    this->contactListUserAltered(user);
+}
+
+
+
 
 void MainWindow::contactListUserAltered(Protocol::User user)
 {

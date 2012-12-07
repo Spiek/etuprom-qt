@@ -14,19 +14,31 @@
 #include <QtNetwork/QTcpSocket>
 
 // own (collective)
-#include "SQMPacketHandler"
+#include "EleaphProtoRpc"
 
 // own (client)
 #include "sqmpacketprocessor.h"
+
+// own (forms)
+#include "mainwindow.h"
+
+// forward declaration because of cyrcle including
+class SQMPacketProcessor;
+class MainWindow;
 
 class Global
 {
     public:
         static QTcpSocket *socketServer;
         static SQMPacketProcessor *packetProcessor;
-        static SQMPacketHandler *packetHandler;
+        static EleaphProtoRPC *eleaphRpc;
         static QString strServerHostname;
         static quint16 intServerPort;
+
+        // forms
+        static MainWindow* formMain;
+
+
         static void initialize();
 
     private:

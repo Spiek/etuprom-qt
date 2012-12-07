@@ -19,8 +19,8 @@
 
 class QueryBuilder
 {
-    // static implementations
     public:
+        // static data structures
         enum QueryType {
             SELECT = 1,
             UPDATE = 2,
@@ -28,6 +28,7 @@ class QueryBuilder
             DELETE = 4
         };
         enum JoinType {
+            NONE = 0,
             INNER = 1,
             LEFT = 2,
             RIGHT = 3
@@ -38,7 +39,14 @@ class QueryBuilder
         };
 
     private:
-        struct SELECTAssociation {
+        // static data structures
+        struct JoinData {
+            JoinType joinType;
+            QString strTargetTable;
+            QString strOnCondition;
+        };
+
+        struct SelectAssociation {
             QString strTable;
             QString strColumn;
             QString strJoinTable;
@@ -58,41 +66,52 @@ class QueryBuilder
         };
 
     public:
-        QueryBuilder(QString strDatabaseIntefier);
+        // static implementations
+        static bool initialize(QString strDatabaseIntefier);
+        static QueryBuilder* initQuery(QueryBuilder::QueryType queryType = QueryBuilder::SELECT);
 
-        // Query functions
-        void updateTableSchemaCache();
-        void createNewQuery(QueryBuilder::QueryType queryType = QueryBuilder::SELECT);
-        void clear(QueryBuilder::QueryType newQueryType = QueryBuilder::SELECT);
-        QString buildQuery();
+    private :
+        // static global data
+        static QMap<QString, QMap<QString, QVariant::Type> > mapTableSchema;
+        static QMap<QString, QueryBuilder::SelectAssociation> mapSelectAssociations;
+        static QString strDatabaseIntefier;
+        static bool boolIsInitalized;
+
+
+        QueryBuilder(QueryBuilder::QueryType queryType);
+
+   public:
+        // Query construction functions
+        QString toString(bool killMyself = true);
+        QSqlQuery toQuery(QString strDatabaseIntefier = "", bool killMyself = true);
 
         // Universal Query functions
-        void addWhereCondition(QString strTable, QString strField, QString strValue, bool isNumeric = false, QString strOpperator = "AND", int level = 1);
-        bool addOrderBy(QString strTable, QString strColumn, QueryBuilder::OrderType orderType = QueryBuilder::ASC);
-        void setLimit(int limit = -1);
+        QueryBuilder* Where(QString strTable, QString strField, QString strValue, bool isNumeric = false, QString strOpperator = "AND", int level = 1);
+        QueryBuilder* OrderBy(QString strTable, QString strColumn, QueryBuilder::OrderType orderType = QueryBuilder::ASC);
+        QueryBuilder* Limit(int limit = -1);
 
         // Select Query functions
-        bool addSelectExpressionTable(QString strTable, QString strTableAlias = "", QueryBuilder::JoinType joinTypeIfNeccessary = QueryBuilder::INNER);
-        bool addSelectExpression(QString strTable, QString strColumn, QString strAlias = "", QueryBuilder::JoinType joinTypeIfNeccessary = QueryBuilder::INNER);
-        bool addSelectJoin(QString strTable, QueryBuilder::JoinType type = QueryBuilder::INNER);
-        bool addSelectGroupBy(QString strTable, QString strColumn);
-        void addSelectHavingCondition(QString strTable, QString strField, QString strValue, QString strOpperator = "AND", int level = 1, bool isNumeric = false);
+        QueryBuilder* SelectTable(QString strTable, QString strTableAlias = "", QueryBuilder::JoinType joinTypeIfNeccessary = QueryBuilder::INNER);
+        QueryBuilder* SelectField(QString strTable, QString strColumn, QString strAlias = "", QueryBuilder::JoinType joinTypeIfNeccessary = QueryBuilder::INNER);
+        QueryBuilder* From(QString strTable);
+        QueryBuilder* Join(QString strTable, QueryBuilder::JoinType type = QueryBuilder::INNER);
+        QueryBuilder* Join(QString strTableSrc, QString strTableTarget, QString strOnCondition, QueryBuilder::JoinType type = QueryBuilder::INNER);
+        QueryBuilder* GroupBy(QString strTable, QString strColumn);
+        QueryBuilder* Having(QString strTable, QString strField, QString strValue, QString strOpperator = "AND", int level = 1, bool isNumeric = false);
 
         // Update Query functions
-        bool setUpdateTable(QString strTable);
-        bool addUpdateField(QString strField, QString strValue, bool isNumeric = false);
+        QueryBuilder* Update(QString strTable);
+        QueryBuilder* UpdateField(QString strField, QString strValue, bool isNumeric = false);
 
         // Insert Query functions
-        bool setInsertTable(QString strTable);
-        bool setInsertField(QString strFieldName, QString strValue, bool isNumeric = false);
+        QueryBuilder* Insert(QString strTable);
+        QueryBuilder* InsertField(QString strFieldName, QString strValue, bool isNumeric = false);
 
         // Delete Query functions
-        bool setDeleteTable(QString strTable);
+        QueryBuilder* Delete(QString strTable);
 
     private:
         // Global Data
-        QMap<QString, QMap<QString, QVariant::Type> > mapTableSchema;
-        QString strDatabaseIntefier;
         QueryBuilder::QueryType currentQueryType;
 
         // Universal Query Data
@@ -100,8 +119,7 @@ class QueryBuilder
 
         // Select Data
         QString strFromTable;
-        QMap<QString, QueryBuilder::JoinType> mapJoins;
-        QMap<QString, QueryBuilder::SELECTAssociation> mapSelectAssociations;
+        QMap<QString, QueryBuilder::JoinData> mapJoins;
         QMap<QString, QString> mapSelectExpressions;
         QStringList lstGroupBy;
         QMap<int, QList<QueryBuilder::Condition>*> mapHavingConditions;

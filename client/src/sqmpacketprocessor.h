@@ -11,27 +11,17 @@
 #include <QObject>
 
 // own (collective)
-#include "SQMPacketHandler"
-
-// own (protbuf)
+#include "EleaphProtoRpc"
 #include "protocol.pb.h"
+
+// own
+#include "global.h"
 
 class SQMPacketProcessor : public QObject
 {
     Q_OBJECT
     public:
         SQMPacketProcessor(QObject *parent = 0);
-
-    signals:
-        void loginResponse(bool loggedin);
-        void userInformationsReceived(Protocol::UserInformations userInformations);
-        void userAltered(Protocol::User user);
-
-    public slots:
-        void newPacketReceived(DataPacket *packet);
-
-        // handler methods
-        void handleLoginResponse(DataPacket *dataPacket, Protocol::Packet *protocolPacket, Protocol::LoginResponse *loginResponse);
 
     private:
         // members

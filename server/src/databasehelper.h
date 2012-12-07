@@ -42,6 +42,7 @@ class DatabaseHelper
         // contact-list database access methods
         bool getContactsByUserId(qint32 userId, Protocol::ContactList *contactList);
         bool getOnlineContactsByUserId(qint32 intId, Protocol::Users *users);
+        bool getAllOnlineContactsByUserId(qint32 intId, Protocol::Users *users);
 
         // update database access methods
         bool updateUserById(Protocol::User *user);
@@ -59,7 +60,7 @@ class DatabaseHelper
         bool setFieldValueByFieldDescriptor(google::protobuf::Message *message, const google::protobuf::FieldDescriptor *fieldDescriptor, QVariant value);
 
         // protobuf query helpers
-        void createUpdateQueryForProtbuf(google::protobuf::Message *message);
+        QueryBuilder *createUpdateQueryForProtbuf(QueryBuilder *queryBuilder, google::protobuf::Message *message);
         /*bool insertByProtocolBufferMessage(google::protobuf::Message *message, bool skipId = true);
         bool updateByProtocolBufferMessageById(google::protobuf::Message *message); SOME BUGS TO FIX UNTIL WE CAN USE IT!*/
 

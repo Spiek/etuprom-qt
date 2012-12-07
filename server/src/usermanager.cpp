@@ -51,7 +51,7 @@ void Usermanager::userChanged(QIODevice *device, bool refreshUser)
     Protocol::Users users;
 
     // if no contact in contact list of changed user is online, don't inform anyone
-    if(!Global::getDatabaseHelper()->getOnlineContactsByUserId(userChanged->id(), &users)) {
+    if(!Global::getDatabaseHelper()->getAllOnlineContactsByUserId(userChanged->id(), &users)) {
         return;
     }
 
@@ -62,7 +62,7 @@ void Usermanager::userChanged(QIODevice *device, bool refreshUser)
 
         // get device of conntected user, and skip him if he isn't really contected (if no device was found!)
         QIODevice *deviceOfUserToInform = this->getConnectedDevice(intUserIdOfUserToInform);
-        if(!deviceOfUserToInform) {
+        if(!deviceOfUserToInform || deviceOfUserToInform == device) {
             continue;
         }
 
@@ -181,7 +181,7 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
 {
     // simplefy login packet values
     Protocol::LoginRequest request;
-    if(request.ParseFromArray(dataPacket->baRawPacketData, dataPacket->baRawPacketData->length())) {
+    if(!request.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse LoginRequest", __PRETTY_FUNCTION__ , __LINE__);
         return;
     }
