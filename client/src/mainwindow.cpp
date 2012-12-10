@@ -28,6 +28,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // handle double click event of new user
     this->connect(this->ui->treeWidgetContactList, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onUserClicked(QTreeWidgetItem*,int)));
+    this->connect(this->ui->actionLogout, SIGNAL(triggered()), this, SLOT(handleLogout()));
+    this->connect(this->ui->actionExit, SIGNAL(triggered()), this, SLOT(deleteLater()));
 }
 
 MainWindow::~MainWindow()
@@ -74,6 +76,13 @@ void MainWindow::handleUserAltered(DataPacket *dataPacket)
     this->contactListUserAltered(user);
 }
 
+void MainWindow::handleLogout()
+{
+    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "logout");
+    this->deleteLater();
+    LoginForm *loginForm = new LoginForm;
+    loginForm->show();
+}
 
 
 

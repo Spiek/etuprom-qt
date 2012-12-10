@@ -54,10 +54,12 @@ class MainWindow : public QMainWindow
         // GUI slots
         void onUserClicked(QTreeWidgetItem* widgetClicked, int column);
 
-        // Protocol slots
+        // Protocol slots (server --> client)
         void handleContactList(DataPacket *dataPacket);
         void handleUserAltered(DataPacket *dataPacket);
-        //void userSendMessage(int userId, QString strMessage);
+
+        // Protocol slots (client --> server)
+        void handleLogout();
 };
 
 #endif // MAINWINDOW_H

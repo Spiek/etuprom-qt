@@ -14,6 +14,7 @@ Usermanager::Usermanager(EleaphProtoRPC *eleaphRpc, QObject *parent) : QObject(p
     // handle client disconnects
     this->connect(eleaphRpc, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
     eleaphRpc->registerRPCMethod("login", this, SLOT(handleLogin(DataPacket*)));
+    eleaphRpc->registerRPCMethod("logout", this, SLOT(handleLogout(DataPacket*)));
 }
 
 Usermanager::~Usermanager()
@@ -217,5 +218,14 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     Protocol::ContactList contactList;
     if(databaseHelper->getContactsByUserId(user->id(), &contactList)) {
         Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist", contactList.SerializeAsString());
+    }
+}
+
+void Usermanager::handleLogout(DataPacket *dataPacket)
+{
+    // if the given device is logged in, log the device/user off
+    QIODevice* device = dataPacket->ioPacketDevice;
+    if(this->mapSocketUser.contains(device)) {
+        this->removeUser(device);
     }
 }

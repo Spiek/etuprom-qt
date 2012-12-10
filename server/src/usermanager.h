@@ -53,6 +53,7 @@ class Usermanager : public QObject
     private slots:
         void handle_client_disconnect(QIODevice *device);
         void handleLogin(DataPacket* dataPacket);
+        void handleLogout(DataPacket* dataPacket);
 };
 
 #endif // USERMANAGER_H

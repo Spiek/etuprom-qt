@@ -19,7 +19,7 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     }
 
     // only allow unconnected sockets, reset all other socket states to have a clear state
-    if(Global::socketServer->state() != QTcpSocket::UnconnectedState) {
+    if(!(Global::socketServer->state() == QTcpSocket::UnconnectedState || Global::socketServer->state() == QTcpSocket::ConnectedState)) {
         Global::socketServer->disconnectFromHost();
     }
 
@@ -87,10 +87,13 @@ void LoginForm::login()
 
 void LoginForm::connectToServer()
 {
-     // connect to server
-    Global::socketServer->connectToHost(Global::strServerHostname, Global::intServerPort);
+     // don't connect to server if allready connected
+    if(Global::socketServer->state() == QTcpSocket::ConnectedState) {
+        return this->ui->centralwidget->setDisabled(false);
+    }
 
-    // inform the user
+    // connect to server, and inform the user about it
+    Global::socketServer->connectToHost(Global::strServerHostname, Global::intServerPort);
     this->ui->statusbar->showMessage("Try to connect to Server...");
     this->ui->centralwidget->setDisabled(true);
 }

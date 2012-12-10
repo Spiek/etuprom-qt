@@ -45,7 +45,7 @@ class EleaphProtoRPC : public IEleaph
         // sending
         void sendRPCDataPacket(QIODevice *device, QString strProcedureName, std::string);
         void sendRPCDataPacket(QIODevice *device, QString strProcedureName, char* data, int length);
-        void sendRPCDataPacket(QIODevice *device, QString strProcedureName, QByteArray data);
+        void sendRPCDataPacket(QIODevice *device, QString strProcedureName, QByteArray data = QByteArray());
 
     protected:
         // interface implementation
