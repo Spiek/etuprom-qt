@@ -12,9 +12,6 @@ SQMPacketProcessor* Global::packetProcessor = 0;
 EleaphProtoRPC* Global::eleaphRpc = 0;
 bool Global::init = false;
 
-// init forms
-MainWindow* Global::formMain = 0;
-
 // Fixme: make it dynamic with a config file
 QString Global::strServerHostname = "localhost";
 quint16 Global::intServerPort = 1234;
@@ -38,9 +35,6 @@ void Global::initialize()
 
     // initialize packet processor, which process the packets
     Global::packetProcessor = new SQMPacketProcessor(app);
-
-    // init main Window
-    Global::formMain = new MainWindow;
 
     // class was successfull initialized!
     Global::init = true;

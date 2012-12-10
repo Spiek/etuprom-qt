@@ -39,7 +39,7 @@ MainWindow::~MainWindow()
 void MainWindow::serverConnectionError(QAbstractSocket::SocketError socketError)
 {
     // if client disconnect from server, inform the user about and jump back to login form
-    this->hide();
+    this->deleteLater();
     QString strErrorMessage = QString("Error \"%1\" occours, please relog...").arg(Global::socketServer->errorString());
     LoginForm *loginForm = new LoginForm(strErrorMessage);
     loginForm->show();

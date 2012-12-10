@@ -127,7 +127,8 @@ void LoginForm::loginResponse(DataPacket *dataPacket)
 
     // login was success, close login form and jump to MainWindow
     else {
-        Global::formMain->show();
+        MainWindow* mainWindow = new MainWindow;
+        mainWindow->show();
         this->deleteLater();
     }
 }

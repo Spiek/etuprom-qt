@@ -19,12 +19,8 @@
 // own (client)
 #include "sqmpacketprocessor.h"
 
-// own (forms)
-#include "mainwindow.h"
-
 // forward declaration because of cyrcle including
 class SQMPacketProcessor;
-class MainWindow;
 
 class Global
 {
@@ -34,10 +30,6 @@ class Global
         static EleaphProtoRPC *eleaphRpc;
         static QString strServerHostname;
         static quint16 intServerPort;
-
-        // forms
-        static MainWindow* formMain;
-
 
         static void initialize();
 
