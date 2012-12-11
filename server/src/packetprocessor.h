@@ -17,12 +17,16 @@ class PacketProcessor;
 #include <QtCore/QPair>
 
 // own libs
-#include "usermanager.h"
 #include "EleaphProtoRpc"
 #include "global.h"
 
+// sub manager
+#include "usermanager.h"
+#include "chatmanager.h"
+
 // forward delclarion, becuase of cyrcle including of the usermanager!
 class Usermanager;
+class Chatmanager;
 
 class PacketProcessor : public QObject
 {
@@ -32,17 +36,15 @@ class PacketProcessor : public QObject
         PacketProcessor(QObject *parent = 0);
         ~PacketProcessor();
         EleaphProtoRPC* getEleaphRpc();
+        Usermanager* getUserManager();
 
     private:
         // sub protocol handlers
         Usermanager *managerUser;
+        Chatmanager *managerChat;
 
         // helper methods
         EleaphProtoRPC *eleaphRpc;
-
-    private slots:
-        // protocol handler methods
-        void handleUserMessage(DataPacket* rpcPacket);
 };
 
 #endif // SQMPACKETPROCESSOR_H

@@ -185,6 +185,25 @@ bool DatabaseHelper::updateUserOnlineStateById(Protocol::User *user, bool online
 }
 
 
+//
+// insert database access methods
+//
+
+bool DatabaseHelper::insertMessagePrivate(qint32 intUserIdSrc, qint32 intUserIdTarget, QString strText, bool transferred)
+{
+    // construct query
+    QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::INSERT)->
+            Insert("messageprivate")->
+            InsertField("user_id", QString::number(intUserIdSrc), true)->
+            InsertField("user_id_receiver", QString::number(intUserIdTarget), true)->
+            InsertField("text", strText)->
+            InsertField("transferred", transferred ? "1" : "0", true)->
+            toQuery();
+
+    // exec query and return resulr
+    return query.exec();
+}
+
 
 //
 // protobuf helpers

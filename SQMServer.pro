@@ -23,7 +23,8 @@ SOURCES +=  server/src/main.cpp \
             collective/src/eleaphprotorpc.cpp \
             collective/proto/src/protocol.pb.cc \
             collective/src/ieleaph.cpp \
-            server/src/querybuilder.cpp
+            server/src/querybuilder.cpp \
+            server/src/chatmanager.cpp
 
 # Headers
 HEADERS +=  \
@@ -34,7 +35,8 @@ HEADERS +=  \
             collective/src/eleaphprotorpc.h \
             collective/proto/src/protocol.pb.cc \
             collective/src/ieleaph.h \
-            server/src/querybuilder.h
+            server/src/querybuilder.h \
+            server/src/chatmanager.h
 
 # include path
 INCLUDEPATH += "include/"

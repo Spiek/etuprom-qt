@@ -48,6 +48,9 @@ class DatabaseHelper
         bool updateUserById(Protocol::User *user);
         bool updateUserOnlineStateById(Protocol::User *user, bool onlineState);
 
+        // insert database access methods
+        bool insertMessagePrivate(qint32 intUserIdSrc, qint32 intUserIdTarget, QString strText, bool transferred);
+
     private:
         // helper data
         QueryBuilder *queryBuilder;

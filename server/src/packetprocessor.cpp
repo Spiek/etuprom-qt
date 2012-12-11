@@ -17,11 +17,9 @@ PacketProcessor::PacketProcessor(QObject *parent) : QObject(parent)
     // save eleaphRPC instance
     this->eleaphRpc = Global::getERPCInstance();
 
-    // construct user manager
+    // construct sub manager
     this->managerUser = new Usermanager(this, this);
-
-    // register needed RPC methods
-    //EleaphProtoRPC *eleaphRPC = Global::getERPCInstance();
+    this->managerChat = new Chatmanager(this, this);
 }
 
 PacketProcessor::~PacketProcessor()
@@ -34,37 +32,7 @@ EleaphProtoRPC* PacketProcessor::getEleaphRpc()
     return this->eleaphRpc;
 }
 
-
-
-
-//
-// Section:
-//  Protocol handler methods
-//
-
-
-
-void PacketProcessor::handleUserMessage(DataPacket *dataPacket)
+Usermanager* PacketProcessor::getUserManager()
 {
-    // simplefy global values
-    /*Usermanager *userManager = Usermanager::getInstance();
-    Protocol::User *user = userManager->getConnectedUser(dataPacket->ioPacketDevice);
-    qint32 intSenderUserId = user->id();
-
-    // simplefy UserMessage values
-    Protocol::UserMessage *userMessage = protocolPacket->mutable_usermessage();
-    QString strMessage = QString::fromStdString(userMessage->messagetext());
-    qint32 intReceiverUserId = userMessage->receiveruserid();
-
-    // set sender user_id
-    userMessage->set_senderuserid(intSenderUserId);
-
-    // send the message directly to user if user is online
-    if(userManager->isLoggedIn(intReceiverUserId)) {
-        QIODevice *deviceUserReceiver = userManager->getConnectedDevice(intReceiverUserId);
-        SQMPacketHandler::getInstance()->sendDataPacket(deviceUserReceiver, protocolPacket->SerializeAsString());
-    }
-
-    // save message in database
-    DatabaseHelper::createNewUserMessage(intSenderUserId, intReceiverUserId, strMessage);*/
+    return this->managerUser;
 }
