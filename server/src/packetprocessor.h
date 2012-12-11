@@ -31,9 +31,14 @@ class PacketProcessor : public QObject
         // con/decon
         PacketProcessor(QObject *parent = 0);
         ~PacketProcessor();
+        EleaphProtoRPC* getEleaphRpc();
 
     private:
+        // sub protocol handlers
         Usermanager *managerUser;
+
+        // helper methods
+        EleaphProtoRPC *eleaphRpc;
 
     private slots:
         // protocol handler methods

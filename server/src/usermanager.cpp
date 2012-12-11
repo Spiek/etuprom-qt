@@ -6,12 +6,13 @@
  
 #include "usermanager.h"
 
-Usermanager::Usermanager(EleaphProtoRPC *eleaphRpc, QObject *parent) : QObject(parent)
+Usermanager::Usermanager(PacketProcessor *packetProcessor, QObject *parent) : QObject(parent)
 {
     // save eleaphrpc
-    this->eleaphRpc = eleaphRpc;
+    this->packetProcessor = packetProcessor;
 
     // handle client disconnects
+    EleaphProtoRPC* eleaphRpc = packetProcessor->getEleaphRpc();
     this->connect(eleaphRpc, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
     eleaphRpc->registerRPCMethod("login", this, SLOT(handleLogin(DataPacket*)));
     eleaphRpc->registerRPCMethod("logout", this, SLOT(handleLogout(DataPacket*)));

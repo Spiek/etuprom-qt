@@ -18,7 +18,7 @@
 #include <QtSql/QSqlQuery>
 
 // own libs
-#include "EleaphProtoRpc"
+#include "packetprocessor.h"
 #include "protocol.pb.h"
 #include "global.h"
 
@@ -27,7 +27,7 @@ class Usermanager : public QObject
     Q_OBJECT
     public:
         // con and decon
-        Usermanager(EleaphProtoRPC *eleaphRpc, QObject *parent = 0);
+        Usermanager(PacketProcessor *packetProcessor, QObject *parent = 0);
         ~Usermanager();
 
         // protocol helper methods
@@ -48,7 +48,7 @@ class Usermanager : public QObject
     private:
         QMap<QIODevice*, Protocol::User*> mapSocketUser;
         QMap<qint32, QPair<QIODevice*, Protocol::User*> > mapIdUser;
-        EleaphProtoRPC *eleaphRpc;
+        PacketProcessor *packetProcessor;
 
     private slots:
         void handle_client_disconnect(QIODevice *device);

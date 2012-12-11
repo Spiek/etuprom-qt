@@ -14,18 +14,27 @@
 
 PacketProcessor::PacketProcessor(QObject *parent) : QObject(parent)
 {
+    // save eleaphRPC instance
+    this->eleaphRpc = Global::getERPCInstance();
+
     // construct user manager
-    this->managerUser = new Usermanager(Global::getERPCInstance(), this);
+    this->managerUser = new Usermanager(this, this);
 
     // register needed RPC methods
     //EleaphProtoRPC *eleaphRPC = Global::getERPCInstance();
-
 }
 
 PacketProcessor::~PacketProcessor()
 {
     delete this->managerUser;
 }
+
+EleaphProtoRPC* PacketProcessor::getEleaphRpc()
+{
+    return this->eleaphRpc;
+}
+
+
 
 
 //
