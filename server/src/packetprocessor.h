@@ -8,7 +8,7 @@
 #define SQMPACKETPROCESSOR_H
 
 // forward declaration
-class SQMPacketProcessor;
+class PacketProcessor;
 
 // Qt (core)
 #include <QtCore/QObject>
@@ -24,13 +24,13 @@ class SQMPacketProcessor;
 // forward delclarion, becuase of cyrcle including of the usermanager!
 class Usermanager;
 
-class SQMPacketProcessor : public QObject
+class PacketProcessor : public QObject
 {
     Q_OBJECT
     public:
         // con/decon
-        SQMPacketProcessor(QObject *parent = 0);
-        ~SQMPacketProcessor();
+        PacketProcessor(QObject *parent = 0);
+        ~PacketProcessor();
 
     private:
         Usermanager *managerUser;

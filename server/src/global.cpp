@@ -7,7 +7,7 @@
 #include "global.h"
 
 // init static vars
-SQMPacketProcessor* Global::packetProcessor = 0;
+PacketProcessor* Global::packetProcessor = 0;
 EleaphProtoRPC* Global::eleaphRPC = 0;
 DatabaseHelper* Global::databaseHelper = 0;
 
@@ -40,7 +40,7 @@ void Global::initialize()
     Global::eleaphRPC = new EleaphProtoRPC(app, 65536);
 
     // initialize packet processor, which process the packets
-    Global::packetProcessor = new SQMPacketProcessor(app);
+    Global::packetProcessor = new PacketProcessor(app);
 
     // start the tcp listening
     Global::eleaphRPC->startTcpListening(Global::intListenPort);
@@ -49,7 +49,7 @@ void Global::initialize()
     Global::init = true;
 }
 
-SQMPacketProcessor* Global::getPPInstance()
+PacketProcessor* Global::getPPInstance()
 {
     return Global::packetProcessor;
 }

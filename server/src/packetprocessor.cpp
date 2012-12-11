@@ -4,7 +4,7 @@
  * or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
  */
  
-#include "sqmpacketprocessor.h"
+#include "packetprocessor.h"
 
 
 //
@@ -12,7 +12,7 @@
 //  Con's and Decon's
 //
 
-SQMPacketProcessor::SQMPacketProcessor(QObject *parent) : QObject(parent)
+PacketProcessor::PacketProcessor(QObject *parent) : QObject(parent)
 {
     // construct user manager
     this->managerUser = new Usermanager(Global::getERPCInstance(), this);
@@ -22,7 +22,7 @@ SQMPacketProcessor::SQMPacketProcessor(QObject *parent) : QObject(parent)
 
 }
 
-SQMPacketProcessor::~SQMPacketProcessor()
+PacketProcessor::~PacketProcessor()
 {
     delete this->managerUser;
 }
@@ -35,7 +35,7 @@ SQMPacketProcessor::~SQMPacketProcessor()
 
 
 
-void SQMPacketProcessor::handleUserMessage(DataPacket *dataPacket)
+void PacketProcessor::handleUserMessage(DataPacket *dataPacket)
 {
     // simplefy global values
     /*Usermanager *userManager = Usermanager::getInstance();

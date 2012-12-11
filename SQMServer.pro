@@ -16,7 +16,7 @@ TEMPLATE = app
 
 # Sources
 SOURCES +=  server/src/main.cpp \
-            server/src/sqmpacketprocessor.cpp \
+            server/src/packetprocessor.cpp \
             server/src/global.cpp \
             server/src/databasehelper.cpp \
             server/src/usermanager.cpp \
@@ -27,7 +27,7 @@ SOURCES +=  server/src/main.cpp \
 
 # Headers
 HEADERS +=  \
-            server/src/sqmpacketprocessor.h \
+            server/src/packetprocessor.h \
             server/src/global.h \
             server/src/databasehelper.h \
             server/src/usermanager.h \

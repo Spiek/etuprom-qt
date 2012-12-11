@@ -11,7 +11,7 @@
 #include <QtCore/QCoreApplication>
 
 // own libs
-#include "sqmpacketprocessor.h"
+#include "packetprocessor.h"
 #include "databasehelper.h"
 #include "EleaphProtoRpc"
 
@@ -22,7 +22,7 @@ class Global
         static void initialize();
 
         // global object getter
-        static SQMPacketProcessor* getPPInstance();
+        static PacketProcessor* getPPInstance();
         static EleaphProtoRPC* getERPCInstance();
         static DatabaseHelper* getDatabaseHelper();
 
@@ -32,7 +32,7 @@ class Global
         static quint16 intListenPort;
 
         // SINGELTON objects
-        static SQMPacketProcessor *packetProcessor;
+        static PacketProcessor *packetProcessor;
         static EleaphProtoRPC *eleaphRPC;
         static DatabaseHelper* databaseHelper;
 };
