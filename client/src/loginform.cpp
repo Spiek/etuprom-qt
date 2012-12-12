@@ -13,6 +13,9 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 {
     ui->setupUi(this);
 
+    // reset log in state
+    Global::boolLoggedIn = false;
+
     // if error message was set, set error message
     if(!strErrorMessage.isEmpty()) {
         this->ui->statusbar->showMessage(strErrorMessage);
@@ -102,18 +105,18 @@ void LoginForm::connectToServer()
 void LoginForm::serverConnectionSuccessfull()
 {
     // inform the user about the successfull connection and enable the window, so that the user can login!
-    this->ui->statusbar->showMessage("Successfull connected to Server...", 10000);
+    this->ui->statusbar->showMessage("Successfull connected to Server... Ready for login");
     this->ui->centralwidget->setDisabled(false);
 }
 
 void LoginForm::serverConnectionError(QAbstractSocket::SocketError socketError)
 {
     // inform the user about the error and not allow the user to login
-    this->ui->statusbar->showMessage(QString("Error \"%1\" occours, try again in 3 Seconds...").arg(Global::socketServer->errorString()));
     this->ui->centralwidget->setDisabled(true);
+    this->ui->statusbar->showMessage(QString("Error \"%1\" occours, try again in 10 Seconds...").arg(Global::socketServer->errorString()));
 
     // try to establish the connection to the server after 3 seconds again
-    QTimer::singleShot(3000, this, SLOT(connectToServer()));
+    QTimer::singleShot(10000, this, SLOT(connectToServer()));
 }
 
 void LoginForm::loginResponse(DataPacket *dataPacket)
@@ -124,12 +127,12 @@ void LoginForm::loginResponse(DataPacket *dataPacket)
     // inform the user about login wasn't success, reset the password, and let the user login again :-)
     if(responseLogin.type() == Protocol::LoginResponse_Type_LoginIncorect) {
         this->ui->statusbar->showMessage("Login failed, username or password wrong, please try again...");
-        this->ui->lineEditPassword->clear();
         this->ui->centralwidget->setDisabled(false);
     }
 
     // login was success, close login form and jump to MainWindow
     else {
+        Global::boolLoggedIn = true;
         MainWindow* mainWindow = new MainWindow;
         mainWindow->show();
         this->deleteLater();

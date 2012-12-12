@@ -16,20 +16,14 @@
 // own (collective)
 #include "EleaphProtoRpc"
 
-// own (client)
-#include "sqmpacketprocessor.h"
-
-// forward declaration because of cyrcle including
-class SQMPacketProcessor;
-
 class Global
 {
     public:
         static QTcpSocket *socketServer;
-        static SQMPacketProcessor *packetProcessor;
         static EleaphProtoRPC *eleaphRpc;
         static QString strServerHostname;
         static quint16 intServerPort;
+        static bool boolLoggedIn;
 
         static void initialize();
 

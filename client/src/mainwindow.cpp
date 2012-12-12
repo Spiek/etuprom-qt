@@ -80,7 +80,7 @@ void MainWindow::handleLogout()
 {
     Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "logout");
     this->deleteLater();
-    LoginForm *loginForm = new LoginForm;
+    LoginForm *loginForm = new LoginForm("Successfull logged out...");
     loginForm->show();
 }
 

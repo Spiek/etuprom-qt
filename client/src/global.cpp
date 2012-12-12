@@ -8,9 +8,9 @@
 
 // init static vars
 QTcpSocket* Global::socketServer = 0;
-SQMPacketProcessor* Global::packetProcessor = 0;
 EleaphProtoRPC* Global::eleaphRpc = 0;
 bool Global::init = false;
+bool Global::boolLoggedIn = false;
 
 // Fixme: make it dynamic with a config file
 QString Global::strServerHostname = "localhost";
@@ -29,12 +29,9 @@ void Global::initialize()
     // init socket
     Global::socketServer = new QTcpSocket(app);
 
-    // init packet handler
+    // init EleaphRpc handler
     Global::eleaphRpc = new EleaphProtoRPC(app);
     Global::eleaphRpc->addDevice(Global::socketServer, IEleaph::NeverForgetDevice);
-
-    // initialize packet processor, which process the packets
-    Global::packetProcessor = new SQMPacketProcessor(app);
 
     // class was successfull initialized!
     Global::init = true;

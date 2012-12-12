@@ -19,7 +19,6 @@ SOURCES +=  collective/src/eleaphprotorpc.cpp \
 # Sources (client)
 SOURCES +=  client/src/main.cpp\
             client/src/mainwindow.cpp \
-            client/src/sqmpacketprocessor.cpp \
             client/src/loginform.cpp \
             client/src/global.cpp \
             client/src/chatbox.cpp
@@ -31,7 +30,6 @@ HEADERS  += collective/src/eleaphprotorpc.h \
 
 # Headers (client)
 HEADERS  += client/src/mainwindow.h  \
-            client/src/sqmpacketprocessor.h \
             client/src/loginform.h \
             client/src/global.h \
             client/src/chatbox.h
