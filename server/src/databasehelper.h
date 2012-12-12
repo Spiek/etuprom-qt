@@ -14,6 +14,7 @@
 #include <QtCore/QList>
 #include <QtCore/QVariant>
 #include <QtCore/QPair>
+#include <QtCore/QDateTime>
 
 // Qt (sql)
 #include <QtSql/QSqlDatabase>
@@ -49,7 +50,7 @@ class DatabaseHelper
         bool updateUserOnlineStateById(Protocol::User *user, bool onlineState);
 
         // insert database access methods
-        bool insertMessagePrivate(qint32 intUserIdSrc, qint32 intUserIdTarget, QString strText, bool transferred);
+        bool insertMessagePrivate(qint32 intUserIdSrc, qint32 intUserIdTarget, QString strText, bool transferred, quint32 tsCreated);
 
     private:
         // helper data

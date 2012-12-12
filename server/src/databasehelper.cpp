@@ -189,7 +189,7 @@ bool DatabaseHelper::updateUserOnlineStateById(Protocol::User *user, bool online
 // insert database access methods
 //
 
-bool DatabaseHelper::insertMessagePrivate(qint32 intUserIdSrc, qint32 intUserIdTarget, QString strText, bool transferred)
+bool DatabaseHelper::insertMessagePrivate(qint32 intUserIdSrc, qint32 intUserIdTarget, QString strText, bool transferred, quint32 tsCreated)
 {
     // construct query
     QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::INSERT)->
@@ -198,6 +198,7 @@ bool DatabaseHelper::insertMessagePrivate(qint32 intUserIdSrc, qint32 intUserIdT
             InsertField("user_id_receiver", QString::number(intUserIdTarget), true)->
             InsertField("text", strText)->
             InsertField("transferred", transferred ? "1" : "0", true)->
+            InsertField("created", QDateTime::fromTime_t(tsCreated).toString("yyyy-MM-dd hh:mm:ss"))->
             toQuery();
 
     // exec query and return resulr

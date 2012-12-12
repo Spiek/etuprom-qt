@@ -10,6 +10,13 @@
 #include <QMainWindow>
 #include <QtCore/QMap>
 #include <QtCore/QSignalMapper>
+#include <QtCore/QDateTime>
+
+// gui
+#include <QWebFrame>
+
+// own
+#include "global.h"
 
 // own (protbuf)
 #include "protocol.pb.h"
@@ -36,6 +43,9 @@ class ChatBox : public QMainWindow
 
     private slots:
         void chatTextChanged(int userId);
+
+        // protocol handlers
+        void handleTextMessage(DataPacket *dataPacket);
 
     private:
         QMap<qint32, qint32> mapUserIdTabIndex;

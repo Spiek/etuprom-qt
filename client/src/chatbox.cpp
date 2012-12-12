@@ -17,6 +17,10 @@ ChatBox::ChatBox(QWidget *parent) :
     // handle text edits
     this->sigMapperUserMessages = new QSignalMapper(this);
     this->connect(this->sigMapperUserMessages, SIGNAL(mapped(int)), this, SLOT(chatTextChanged(int)));
+
+    // protocol handlings
+    EleaphProtoRPC *eleaphRpc = Global::eleaphRpc;
+    eleaphRpc->registerRPCMethod("message.private", this, SLOT(handleTextMessage(DataPacket*)));
 }
 
 ChatBox::~ChatBox()
@@ -57,9 +61,29 @@ void ChatBox::chatTextChanged(int userId)
     QString strMessage = chatForm->plainTextEditText->toPlainText();
     if(strMessage.right(1) == "\n") {
         strMessage.remove(strMessage.length() - 1, 1);
-        this->newMessage(userId, strMessage);
+
+        // send message to server
+        Protocol::MessagePrivate message;
+        message.set_useridsenderreceiver(userId);
+        message.set_text(strMessage.toStdString());
+        message.set_timestamp(QDateTime::currentMSecsSinceEpoch() / 1000);
+        Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "message.private", message.SerializeAsString());
 
         // clear message
         chatForm->plainTextEditText->clear();
     }
+}
+
+void ChatBox::handleTextMessage(DataPacket *dataPacket)
+{
+    // parse protocol
+    Protocol::MessagePrivate message;
+    if(!message.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
+        qWarning("[%s][%d] - Protocol Violation by Trying to Parse MessagePrivate", __PRETTY_FUNCTION__ , __LINE__);
+        return;
+    }
+
+    // get chat widget
+    Ui_FormChatWidget *chatForm = (Ui_FormChatWidget*)this->mapUserIdChatForm.value(message.useridsenderreceiver());
+    chatForm->textBrowser->insertHtml(QString("<b>[%1]%2</b> %3<br />").arg(QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm:ss"), QString::number(message.useridsenderreceiver()), QString::fromStdString(message.text())));
 }
