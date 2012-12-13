@@ -96,76 +96,72 @@ void IEleaph::dataHandler()
         return;
     }
 
-    /// <Aquire Data Packet>
+    // loop until socket is empty
+    while(PACKETLENGTHTYPE intAvailableDataLength = ioPacketDevice->bytesAvailable()) {
 
-    // get the exesting data packet, or if it doesn't exist a 0 Pointer
-    QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
-    DataPacket *packet = variantStoredPackage.type() == QVariant::Invalid ? (DataPacket*)0 : (DataPacket*)variantStoredPackage.value<void *>();
+        /// <Aquire Data Packet>
+        // get the exesting data packet, or if it doesn't exist a 0 Pointer
+        QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
+        DataPacket *packet = variantStoredPackage.type() == QVariant::Invalid ? (DataPacket*)0 : (DataPacket*)variantStoredPackage.value<void *>();
 
-    // create new data packet if data packet doesn't exist
-    if(!packet) {
-        DataPacket *packetNew = new DataPacket;
-        packet = packetNew;
+        // create new data packet if data packet doesn't exist
+        if(!packet) {
+            DataPacket *packetNew = new DataPacket;
+            packet = packetNew;
 
-        // initialize default values and add new packet to progress map
-        packetNew->intPacktLength = 0;
-        packetNew->baRawPacketData = 0;
-        packetNew->ioPacketDevice = ioPacketDevice;
-        ioPacketDevice->setProperty(PROPERTYNAME_PACKET, qVariantFromValue((void *) packetNew));
-    }
+            // initialize default values and add new packet to progress map
+            packetNew->intPacktLength = 0;
+            packetNew->baRawPacketData = 0;
+            packetNew->ioPacketDevice = ioPacketDevice;
+            ioPacketDevice->setProperty(PROPERTYNAME_PACKET, qVariantFromValue((void *) packetNew));
+        }
 
-    /// </Aquire Data Packet> <-- Packet was successfull aquired!
-    /// <Read Header>
+        /// </Aquire Data Packet> <-- Packet was successfull aquired!
+        /// <Read Header>
 
-    // simplefy some header lengths
-    PACKETLENGTHTYPE intAvailableDataLength = ioPacketDevice->bytesAvailable();
+        // read header if it is not present, yet
+        if(!packet->intPacktLength) {
+            // if not enough data available to read complete header, exit here and wait for more data!
+            if(intAvailableDataLength < sizeof(PACKETLENGTHTYPE)) {
+                return;
+            }
 
-    // read header if it is not present, yet
-    if(!packet->intPacktLength) {
-        // if not enough data available to read complete header, exit here and wait for more data!
-        if(intAvailableDataLength < sizeof(PACKETLENGTHTYPE)) {
+            // otherwise, enough data is present to read the complete header, so do it :-)
+            // read content length with the help of Qt's Endian method qFromBigEndian
+            QByteArray baPacketLength = ioPacketDevice->read(sizeof(PACKETLENGTHTYPE));
+            PACKETLENGTHTYPE* ptrPacketLength = (PACKETLENGTHTYPE*)baPacketLength.constData();
+            packet->intPacktLength = qFromBigEndian<PACKETLENGTHTYPE>(*ptrPacketLength);
+            intAvailableDataLength -= sizeof(PACKETLENGTHTYPE);
+
+            // security check:
+            // if content length is greater than the allowed intMaxDataLength, close the device immediately
+            if(packet->intPacktLength > this->intMaxDataLength) {
+                return ioPacketDevice->close();
+            }
+        }
+
+        /// </Read Header> <-- Header read complete!
+        /// <Read Content>
+
+        // inform the outside world about packet download process
+        this->packetDownloadProcess(ioPacketDevice, (intAvailableDataLength > packet->intPacktLength ? packet->intPacktLength : intAvailableDataLength ), packet->intPacktLength);
+
+        // if not enough data is present to read complete content, exit here and wait for more data!
+        if(intAvailableDataLength < packet->intPacktLength) {
             return;
         }
 
-        // otherwise, enough data is present to read the complete header, so do it :-)
-        // read content length with the help of Qt's Endian method qFromBigEndian
-        QByteArray baPacketLength = ioPacketDevice->read(sizeof(PACKETLENGTHTYPE));
-        PACKETLENGTHTYPE* ptrPacketLength = (PACKETLENGTHTYPE*)baPacketLength.constData();
-        packet->intPacktLength = qFromBigEndian<PACKETLENGTHTYPE>(*ptrPacketLength);
+        // read the complete content of packet
+        packet->baRawPacketData = new QByteArray(ioPacketDevice->read(packet->intPacktLength));
 
-        // security check:
-        // if content length is greater than the allowed intMaxDataLength, close the device immediately
-        if(packet->intPacktLength > this->intMaxDataLength) {
-            return ioPacketDevice->close();
-        }
-    }
+        // call user implementation (IMPORTANT: user implementation has to delete the DataPacket after use!)
+        this->newDataPacketReceived(packet);
 
-    /// </Read Header> <-- Header read complete!
-    /// <Read Content>
+        // at this point the entire packet was read and sent:
+        // now we delete used Packet-Cache property
+        ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
 
-    // inform the outside world about packet download process
-    this->packetDownloadProcess(ioPacketDevice, (intAvailableDataLength > packet->intPacktLength ? packet->intPacktLength : intAvailableDataLength ), packet->intPacktLength);
-
-    // if not enough data is present to read complete content, exit here and wait for more data!
-    if(intAvailableDataLength < packet->intPacktLength) {
-        return;
-    }
-
-    // read the complete content of packet
-    packet->baRawPacketData = new QByteArray(ioPacketDevice->read(packet->intPacktLength));
-
-    // call user implementation (IMPORTANT: user implementation has to delete the DataPacket after use!)
-    this->newDataPacketReceived(packet);
-
-    // at this point the entire packet was read and sent:
-    // now we delete used Packet-Cache property
-    ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
-
-    /// </Read Content> <-- Content read complete!
-
-    // if there is still data on the socket call myself recrusivly again
-    if(intAvailableDataLength > packet->intPacktLength) {
-        return this->dataHandler();
+        /// </Read Content> <-- Content read complete!
     }
 }
 
