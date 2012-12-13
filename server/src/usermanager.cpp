@@ -215,10 +215,12 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     // send the user information about the user who want to login
     Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "user", user->SerializeAsString());
 
-    // get (if available) and send the contact list users to user
+    // get (if available) all contacts from logged in user and send the list to the logged in user, otherwise send empty packet
     Protocol::ContactList contactList;
     if(databaseHelper->getContactsByUserId(user->id(), &contactList)) {
         Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist", contactList.SerializeAsString());
+    } else {
+        Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist");
     }
 }
 
