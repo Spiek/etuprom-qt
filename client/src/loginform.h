@@ -36,15 +36,24 @@ class LoginForm : public QMainWindow
         ~LoginForm();
 
     private:
+        enum LoginProcess {
+            LoginProcess_None = 0,
+            LoginProcess_UserDataReceived = 1 << 0,
+            LoginProcess_ContactListDataReceived = 1 << 1,
+            LoginProcess_Done = 3
+        } loginProcess;
         Ui::LoginForm *ui;
 
     private slots:
         // Gui
         bool loginValidator();
         void login();
+        void jumpToMainWindowIfPossible();
 
         // PacketProcessor
         void loginResponse(DataPacket* dataPacket);
+        void handleUserData(DataPacket* dataPacket);
+        void handleUserContactList(DataPacket* dataPacket);
 
         // Socket slots
         void serverConnectionSuccessfull();

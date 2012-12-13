@@ -9,12 +9,14 @@
 
 // Qt (core)
 #include <QtGui/QApplication>
+#include <QtCore/QMap>
 
 // Qt (network)
 #include <QtNetwork/QTcpSocket>
 
 // own (collective)
 #include "EleaphProtoRpc"
+#include "protocol.pb.h"
 
 class Global
 {
@@ -24,6 +26,10 @@ class Global
         static QString strServerHostname;
         static quint16 intServerPort;
         static bool boolLoggedIn;
+        static Protocol::User* user;
+
+        // protocol implementations
+        static QMap<qint32, Protocol::Contact*> mapContactList;
 
         static void initialize();
 

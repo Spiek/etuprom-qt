@@ -15,6 +15,7 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 
     // reset log in state
     Global::boolLoggedIn = false;
+    this->loginProcess = LoginProcess_None;
 
     // if error message was set, set error message
     if(!strErrorMessage.isEmpty()) {
@@ -39,6 +40,8 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 
     // signal --> slot connections (PacketProcessor)
     Global::eleaphRpc->registerRPCMethod("login", this, SLOT(loginResponse(DataPacket*)));
+    Global::eleaphRpc->registerRPCMethod("user", this, SLOT(handleUserData(DataPacket*)));
+    Global::eleaphRpc->registerRPCMethod("contactlist", this, SLOT(handleUserContactList(DataPacket*)));
 
     // connect to server
     // Note: it could happen that the class was constructed in an event from the QTcpSocket (like the QTcpSocket::error() slot),
@@ -119,6 +122,20 @@ void LoginForm::serverConnectionError(QAbstractSocket::SocketError socketError)
     QTimer::singleShot(10000, this, SLOT(connectToServer()));
 }
 
+void LoginForm::jumpToMainWindowIfPossible()
+{
+    // if not all needed data is received, exit here
+    if(this->loginProcess != LoginProcess_Done) {
+        return;
+    }
+
+    // create main window and delete Login Form
+    this->deleteLater();
+    MainWindow *mainWindow = new MainWindow;
+    mainWindow->show();
+}
+
+
 void LoginForm::loginResponse(DataPacket *dataPacket)
 {
     Protocol::LoginResponse responseLogin;
@@ -133,8 +150,45 @@ void LoginForm::loginResponse(DataPacket *dataPacket)
     // login was success, close login form and jump to MainWindow
     else {
         Global::boolLoggedIn = true;
-        MainWindow* mainWindow = new MainWindow;
-        mainWindow->show();
-        this->deleteLater();
     }
+}
+
+void LoginForm::handleUserData(DataPacket *dataPacket)
+{
+    // simplefy user packet values
+    Protocol::User *user = new Protocol::User;
+    if(!user->ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
+        qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
+        return;
+    }
+    this->loginProcess = (LoginProcess)(this->loginProcess | LoginProcess_UserDataReceived);
+    Global::user = user;
+
+    // if all login data was received jump to main window
+    return this->jumpToMainWindowIfPossible();
+}
+
+void LoginForm::handleUserContactList(DataPacket *dataPacket)
+{
+    // if no data was present, the contact list of the user is empty, exit!
+    this->loginProcess = (LoginProcess)(this->loginProcess | LoginProcess_ContactListDataReceived);
+    if(dataPacket->baRawPacketData->isEmpty()) {
+        return this->jumpToMainWindowIfPossible();
+    }
+
+    // simplefy user packet values
+    Protocol::ContactList contactList;
+    if(!contactList.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
+        qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
+        return;
+    }
+
+    // save all contacts for global access
+    for(int i = 0; i < contactList.contact_size(); i++) {
+        Protocol::Contact* contact = new Protocol::Contact(contactList.contact(i));
+        Global::mapContactList.insert(contact->user().id(), contact);
+    }
+
+    // if all login data was received jump to main window
+    return this->jumpToMainWindowIfPossible();
 }

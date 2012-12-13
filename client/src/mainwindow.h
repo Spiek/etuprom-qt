@@ -19,7 +19,6 @@
 #include "loginform.h"
 #include "chatbox.h"
 
-
 namespace Ui {
     class MainWindow;
 }
@@ -53,9 +52,9 @@ class MainWindow : public QMainWindow
 
         // GUI slots
         void onUserClicked(QTreeWidgetItem* widgetClicked, int column);
+        void constructContactList();
 
         // Protocol slots (server --> client)
-        void handleContactList(DataPacket *dataPacket);
         void handleUserAltered(DataPacket *dataPacket);
 
         // Protocol slots (client --> server)
