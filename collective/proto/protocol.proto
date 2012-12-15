@@ -46,9 +46,17 @@ message Users
 	repeated User user = 1;
 }
 
-message MessagePrivate
+// Private Message send from the client to the server
+message MessagePrivateClient
 {
-	required int32 userIdSenderReceiver = 1;
+	required int32 userIdReceiver = 1;
+	required string text = 2;
+}
+
+// Private Message send from the server to the client
+message MessagePrivateServer
+{
+	required User userSender = 1;
 	required string text = 2;
 	required uint32 timestamp = 3;
 }

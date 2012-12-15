@@ -19,7 +19,7 @@ Chatmanager::Chatmanager(PacketProcessor* packetProcessor, QObject *parent) : QO
 void Chatmanager::handlePrivateChatMessage(DataPacket *dataPacket)
 {
     // parse protocol
-    Protocol::MessagePrivate message;
+    Protocol::MessagePrivateClient message;
     if(!message.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse MessagePrivate", __PRETTY_FUNCTION__ , __LINE__);
         return;
@@ -37,28 +37,24 @@ void Chatmanager::handlePrivateChatMessage(DataPacket *dataPacket)
     }
 
     // get some needed informations
-    qint32 intUserIdSender = userManager->getConnectedUser(dataPacket->ioPacketDevice)->id();
-    qint32 intUserIdReceiver = message.useridsenderreceiver();
-    QString strText = QString::fromStdString(message.text());
-    quint32 intTimeStampCreated = message.timestamp();
+    Protocol::User* userSender = userManager->getConnectedUser(dataPacket->ioPacketDevice);
+    qint32 intUserIdReceiver = message.useridreceiver();
+    quint32 intTimeStampCreated = QDateTime::currentMSecsSinceEpoch() / 1000;
     bool boolTransfered = false;
 
-    // if timestamp is in the past we have a Protocol Violation
-    if(intTimeStampCreated < (QDateTime::currentMSecsSinceEpoch() / 1000)) {
-        qWarning("[%s][%d] - Protocol Violation by Timestamp check (timestamp is in the past!)", __PRETTY_FUNCTION__ , __LINE__);
-        return;
-    }
-
-    // set userSenderReceiver to sending user, so that receiver knows who has send the message
-    message.set_useridsenderreceiver(intUserIdSender);
-
-    // send the user message to the target user (if he is logged in)
+    // send Protocol::MessagePrivateServer-message to the target user (if he is logged in)
     if(userManager->isLoggedIn(intUserIdReceiver)) {
+        Protocol::MessagePrivateServer messageForClient;
+        messageForClient.mutable_usersender()->MergeFrom(*userSender);
+        messageForClient.set_text(message.text());
+        messageForClient.set_timestamp(intTimeStampCreated);
+
+        // send Private Message packet to the target user
         QIODevice *deviceTargetUser = userManager->getConnectedDevice(intUserIdReceiver);
-        eleaphRpc->sendRPCDataPacket(deviceTargetUser, "message.private", message.SerializeAsString());
+        eleaphRpc->sendRPCDataPacket(deviceTargetUser, "message.private", messageForClient.SerializeAsString());
         boolTransfered = true;
     }
 
     // save message in the database
-    Global::getDatabaseHelper()->insertMessagePrivate(intUserIdSender, intUserIdReceiver, strText, boolTransfered, message.timestamp());
+    Global::getDatabaseHelper()->insertMessagePrivate(userSender->id(), intUserIdReceiver, QString::fromStdString(message.text()), boolTransfered, intTimeStampCreated);
 }
