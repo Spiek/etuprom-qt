@@ -11,12 +11,14 @@
 #include <QtCore/QMap>
 #include <QtCore/QSignalMapper>
 #include <QtCore/QDateTime>
+#include <QtCore/QFile>
 
 // gui
 #include <QWebFrame>
 
 // own
 #include "global.h"
+#include "ui_chatTab.h"
 
 // own (protbuf)
 #include "protocol.pb.h"
@@ -40,6 +42,8 @@ class ChatBox : public QMainWindow
     public slots:
         // extern slot class accessors
         void addNewUser(Protocol::User *user);
+        void loadDesign(QString strDesign);
+        void addMessage(QString text, Protocol::User* user, bool direction, quint32 timeStamp);
 
     private slots:
         void chatTextChanged(int userId);
@@ -47,11 +51,37 @@ class ChatBox : public QMainWindow
         // protocol handlers
         void handleTextMessage(DataPacket *dataPacket);
 
+    protected:
+        void closeEvent(QCloseEvent *closeEvent);
+
     private:
+        struct Design {
+            // Global
+            QUrl urlPathToMainCss;
+
+            // Global html
+            QString strContentOfFooter;
+            QString strContentOfHeader;
+            QString strContentOfStatus;
+
+            // Incoming html
+            QString strContentOfInBoundAction;
+            QString strContentOfInBoundContent;
+            QString strContentOfInBoundNextContent;
+
+            // Outgoing html
+            QString strContentOfOutBoundAction;
+            QString strContentOfOutBoundContent;
+            QString strContentOfOutBoundNextContent;
+        } designCurrent;
+
         QMap<qint32, qint32> mapUserIdTabIndex;
-        QMap<qint32, void*> mapUserIdChatForm;
+        QMap<qint32, Ui_FormChatWidget*> mapUserIdChatForm;
         Ui::ChatBox *ui;
         QSignalMapper *sigMapperUserMessages;
+
+        // design components
+        QMap<qint32, bool*> mapUserLastMessage;
 };
 
 #endif // CHATBOX_H

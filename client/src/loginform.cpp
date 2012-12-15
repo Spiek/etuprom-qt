@@ -150,6 +150,7 @@ void LoginForm::loginResponse(DataPacket *dataPacket)
     // login was success, close login form and jump to MainWindow
     else {
         Global::boolLoggedIn = true;
+        this->ui->statusbar->showMessage("Login success, wait for client data...");
     }
 }
 
@@ -187,6 +188,7 @@ void LoginForm::handleUserContactList(DataPacket *dataPacket)
     for(int i = 0; i < contactList.contact_size(); i++) {
         Protocol::Contact* contact = new Protocol::Contact(contactList.contact(i));
         Global::mapContactList.insert(contact->user().id(), contact);
+        Global::mapCachedUsers.insert(contact->user().id(), contact->mutable_user());
     }
 
     // if all login data was received jump to main window

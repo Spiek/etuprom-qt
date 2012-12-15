@@ -42,7 +42,7 @@ class MainWindow : public QMainWindow
         void setupUser(Protocol::User *user, QString contactGroup = "");
 
         // designer members
-        ChatBox chatBox;
+        ChatBox* chatBox;
 
     private slots:
         // Socket slots

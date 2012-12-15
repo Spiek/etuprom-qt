@@ -26,11 +26,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // create contact list
     this->constructContactList();
+
+    this->chatBox = new ChatBox;
+    this->chatBox->loadDesign("Orchid");
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete this->chatBox;
 }
 
 
@@ -68,7 +72,9 @@ void MainWindow::handleLogout()
 {
     // cleanup all variable global data
     qDeleteAll(Global::mapContactList.values());
+    qDeleteAll(Global::mapCachedUsers.values());
     Global::mapContactList.clear();
+    Global::mapCachedUsers.clear();
 
     // process logout
     Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "logout");
@@ -155,6 +161,5 @@ void MainWindow::onUserClicked(QTreeWidgetItem *widgetClicked, int column)
     Protocol::User *user = this->mapIdUser.value(userId);
 
     // add user to chatBox and show the chatBox
-    this->chatBox.addNewUser(user);
-    this->chatBox.show();
+    this->chatBox->addNewUser(user);
 }

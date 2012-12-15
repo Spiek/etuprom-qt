@@ -30,6 +30,7 @@ class Global
 
         // protocol implementations
         static QMap<qint32, Protocol::Contact*> mapContactList;
+        static QMap<qint32, Protocol::User*> mapCachedUsers;
 
         static void initialize();
 

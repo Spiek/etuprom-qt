@@ -12,6 +12,7 @@ EleaphProtoRPC* Global::eleaphRpc = 0;
 bool Global::init = false;
 bool Global::boolLoggedIn = false;
 QMap<qint32, Protocol::Contact*> Global::mapContactList;
+QMap<qint32, Protocol::User*> Global::mapCachedUsers;
 Protocol::User* Global::user = 0;
 
 // Fixme: make it dynamic with a config file
