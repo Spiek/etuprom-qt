@@ -9,6 +9,9 @@
 
 // Qt (core)
 #include <QtCore/QCoreApplication>
+#include <QtCore/QSettings>
+#include <QtCore/QVariant>
+#include <QtCore/QFile>
 
 // own libs
 #include "packetprocessor.h"
@@ -26,10 +29,14 @@ class Global
         static EleaphProtoRPC* getERPCInstance();
         static DatabaseHelper* getDatabaseHelper();
 
+        // global config handlers
+        static QVariant getConfigValue(QString strKey, QVariant varDefault = "", bool boolSync = false);
+        static void setConfigValue(QString strKey, QVariant varValue, bool boolSync = true);
+
     private:
         // settings
+        static QSettings *settings;
         static bool init;
-        static quint16 intListenPort;
 
         // SINGELTON objects
         static PacketProcessor *packetProcessor;

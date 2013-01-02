@@ -17,6 +17,9 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
+    // set some program values
+    QCoreApplication::setApplicationName("SQMServer");
+
     // initialize globalization
     Global::initialize();
 
