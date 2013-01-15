@@ -21,7 +21,8 @@ SOURCES +=  client/src/main.cpp\
             client/src/mainwindow.cpp \
             client/src/loginform.cpp \
             client/src/global.cpp \
-            client/src/chatbox.cpp
+            client/src/chatbox.cpp \
+            client/src/designloader.cpp
 
 # Headers (collective)
 HEADERS  += collective/src/eleaphprotorpc.h \
@@ -32,7 +33,8 @@ HEADERS  += collective/src/eleaphprotorpc.h \
 HEADERS  += client/src/mainwindow.h  \
             client/src/loginform.h \
             client/src/global.h \
-            client/src/chatbox.h
+            client/src/chatbox.h \
+            client/src/designloader.h
 
 # Forms
 FORMS    += client/ui/mainwindow.ui \

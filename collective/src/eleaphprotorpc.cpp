@@ -16,7 +16,7 @@ EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph
 // Public Access functions
 //
 /*
- * sendRPCDataPacket - send an RPC DataPacket to given Device
+ * registerRPCMethod - register RPC Method for Async DataPacket handling
  */
 void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot)
 {

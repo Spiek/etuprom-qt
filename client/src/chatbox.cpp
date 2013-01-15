@@ -35,54 +35,11 @@ void ChatBox::closeEvent(QCloseEvent *closeEvent)
 
 void ChatBox::loadDesign(QString strDesign)
 {
-    // some global path pars
-    QString strDesignPath = QString("design/%1/Contents/Resources/").arg(strDesign);
+    this->designChat = DesignLoader::loadChatDesign(strDesign);
 
-    // Global (css etc.)
-    this->designCurrent.urlPathToMainCss = QUrl::fromLocalFile(strDesignPath + "main.css");
-
-    QFile fileContentOfFooter(strDesignPath + "Footer.html");
-    fileContentOfFooter.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfFooter = fileContentOfFooter.readAll();
-
-    QFile fileContentOfHeader(strDesignPath + "Header.html");
-    fileContentOfHeader.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfHeader = fileContentOfHeader.readAll();
-
-    QFile fileContentOfStatus(strDesignPath + "Status.html");
-    fileContentOfStatus.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfStatus = fileContentOfStatus.readAll();
-
-
-    // Incoming html
-    QFile fileContentOfInBoundAction(strDesignPath + "Incoming/Action.html");
-    fileContentOfInBoundAction.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfInBoundAction = fileContentOfInBoundAction.readAll();
-
-    QFile fileContentOfInBoundContent(strDesignPath + "Incoming/Content.html");
-    fileContentOfInBoundContent.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfInBoundContent = fileContentOfInBoundContent.readAll();
-
-    QFile fileContentOfInBoundNextContent(strDesignPath + "Incoming/NextContent.html");
-    fileContentOfInBoundNextContent.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfInBoundNextContent = fileContentOfInBoundNextContent.readAll();
-
-
-    // Outgoing html
-    QFile fileContentOfOutBoundAction(strDesignPath + "Outgoing/Action.html");
-    fileContentOfOutBoundAction.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfOutBoundAction = fileContentOfOutBoundAction.readAll();
-
-    QFile fileContentOfOutBoundContent(strDesignPath + "Outgoing/Content.html");
-    fileContentOfOutBoundContent.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfOutBoundContent = fileContentOfOutBoundContent.readAll();
-
-    QFile fileContentOfOutBoundNextContent(strDesignPath + "Outgoing/NextContent.html");
-    fileContentOfOutBoundNextContent.open(QFile::ReadOnly);
-    this->designCurrent.strContentOfOutBoundNextContent = fileContentOfOutBoundNextContent.readAll();
-
+    // install design
     foreach(Ui_FormChatWidget* chatFormUser, this->mapUserIdChatForm.values()) {
-        chatFormUser->webView->settings()->setUserStyleSheetUrl(this->designCurrent.urlPathToMainCss);
+        chatFormUser->webView->settings()->setUserStyleSheetUrl(this->designChat.urlPathToMainCss);
     }
 }
 
@@ -97,7 +54,7 @@ void ChatBox::addNewUser(Protocol::User *user)
         chatForm->setupUi(newTab);
 
         // set style sheets
-        chatForm->webView->settings()->setUserStyleSheetUrl(this->designCurrent.urlPathToMainCss);
+        chatForm->webView->settings()->setUserStyleSheetUrl(this->designChat.urlPathToMainCss);
 
         // handle text changing event from users textedit
         this->connect(chatForm->plainTextEditText, SIGNAL(textChanged()), this->sigMapperUserMessages, SLOT(map()));
@@ -181,12 +138,12 @@ void ChatBox::addMessage(QString text, Protocol::User* user, bool direction, qui
 
     // create outbound html code, if we have a outbound message (Logged in User --> Remote User)
     if(!direction) {
-        strNewTextMessage = *boolLastMessageDirection ? this->designCurrent.strContentOfOutBoundNextContent : this->designCurrent.strContentOfOutBoundContent;
+        strNewTextMessage = *boolLastMessageDirection ? this->designChat.strContentOfOutBoundNextContent : this->designChat.strContentOfOutBoundContent;
     }
 
     // otherwise create inbound html code, if we have a inbound message (Remote User --> Logged in User)
     else {
-        strNewTextMessage = !*boolLastMessageDirection ? this->designCurrent.strContentOfInBoundNextContent : this->designCurrent.strContentOfInBoundContent;
+        strNewTextMessage = !*boolLastMessageDirection ? this->designChat.strContentOfInBoundNextContent : this->designChat.strContentOfInBoundContent;
     }
 
     // replace values

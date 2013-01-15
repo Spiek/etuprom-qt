@@ -17,6 +17,7 @@
 #include <QWebFrame>
 
 // own
+#include "designloader.h"
 #include "global.h"
 #include "ui_chatTab.h"
 
@@ -55,25 +56,7 @@ class ChatBox : public QMainWindow
         void closeEvent(QCloseEvent *closeEvent);
 
     private:
-        struct Design {
-            // Global
-            QUrl urlPathToMainCss;
-
-            // Global html
-            QString strContentOfFooter;
-            QString strContentOfHeader;
-            QString strContentOfStatus;
-
-            // Incoming html
-            QString strContentOfInBoundAction;
-            QString strContentOfInBoundContent;
-            QString strContentOfInBoundNextContent;
-
-            // Outgoing html
-            QString strContentOfOutBoundAction;
-            QString strContentOfOutBoundContent;
-            QString strContentOfOutBoundNextContent;
-        } designCurrent;
+        DesignLoader::ChatDesign designChat;
 
         QMap<qint32, qint32> mapUserIdTabIndex;
         QMap<qint32, Ui_FormChatWidget*> mapUserIdChatForm;
