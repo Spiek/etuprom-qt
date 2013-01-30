@@ -69,7 +69,7 @@ void Usermanager::userChanged(QIODevice *device, bool refreshUser)
         }
 
         // inform connected user in contactlist of changed user, about the change
-        Global::getERPCInstance()->sendRPCDataPacket(deviceOfUserToInform, "user_altered", userChanged->SerializeAsString());
+        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(deviceOfUserToInform, "user_altered", userChanged->SerializeAsString());
     }
 }
 
@@ -201,7 +201,7 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     } else {
         response.set_type(Protocol::LoginResponse_Type_Success);
     }
-    Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "login", response.SerializeAsString());
+    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, "login", response.SerializeAsString());
 
     // if login wasn't successfull, delte constructed user and end here
     if(response.type() == Protocol::LoginResponse_Type_LoginIncorect) {
@@ -213,14 +213,14 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     this->addUser(dataPacket->ioPacketDevice, user);
 
     // send the user information about the user who want to login
-    Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "user", user->SerializeAsString());
+    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, "user", user->SerializeAsString());
 
     // get (if available) all contacts from logged in user and send the list to the logged in user, otherwise send empty packet
     Protocol::ContactList contactList;
     if(databaseHelper->getContactsByUserId(user->id(), &contactList)) {
-        Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist", contactList.SerializeAsString());
+        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist", contactList.SerializeAsString());
     } else {
-        Global::getERPCInstance()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist");
+        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist");
     }
 }
 

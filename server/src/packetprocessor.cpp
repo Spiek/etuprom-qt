@@ -12,10 +12,10 @@
 //  Con's and Decon's
 //
 
-PacketProcessor::PacketProcessor(QObject *parent) : QObject(parent)
+PacketProcessor::PacketProcessor(EleaphProtoRPC *eleaphRpc, QObject *parent) : QObject(parent)
 {
     // save eleaphRPC instance
-    this->eleaphRpc = Global::getERPCInstance();
+    this->eleaphRpc = eleaphRpc;
 
     // construct sub manager
     this->managerUser = new Usermanager(this, this);

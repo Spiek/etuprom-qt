@@ -14,9 +14,7 @@
 #include <QtCore/QFile>
 
 // own libs
-#include "packetprocessor.h"
 #include "databasehelper.h"
-#include "EleaphProtoRpc"
 
 class Global
 {
@@ -25,8 +23,6 @@ class Global
         static void initialize();
 
         // global object getter
-        static PacketProcessor* getPPInstance();
-        static EleaphProtoRPC* getERPCInstance();
         static DatabaseHelper* getDatabaseHelper();
 
         // global config handlers
@@ -39,8 +35,6 @@ class Global
         static bool init;
 
         // SINGELTON objects
-        static PacketProcessor *packetProcessor;
-        static EleaphProtoRPC *eleaphRPC;
         static DatabaseHelper* databaseHelper;
 };
 

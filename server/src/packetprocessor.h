@@ -20,11 +20,12 @@ class PacketProcessor;
 #include "EleaphProtoRpc"
 #include "global.h"
 
-// sub manager
+// sub managers
 #include "usermanager.h"
 #include "chatmanager.h"
 
-// forward delclarion, becuase of cyrcle including of the usermanager!
+// forward declaration, becuase of cyrcle including of the sub managers
+// (every submanager need a pointer to the PacketProcessor to access ressources)
 class Usermanager;
 class Chatmanager;
 
@@ -33,7 +34,7 @@ class PacketProcessor : public QObject
     Q_OBJECT
     public:
         // con/decon
-        PacketProcessor(QObject *parent = 0);
+        PacketProcessor(EleaphProtoRPC* eleaphRpc, QObject *parent = 0);
         ~PacketProcessor();
         EleaphProtoRPC* getEleaphRpc();
         Usermanager* getUserManager();

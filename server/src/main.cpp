@@ -12,16 +12,31 @@
 
 // own libs
 #include "global.h"
+#include "packetprocessor.h"
+
+// collective own libs
+#include "EleaphProtoRpc"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
     // set some program values
-    QCoreApplication::setApplicationName("SQMServer");
+    a.setApplicationName("SQMServer");
 
     // initialize globalization
     Global::initialize();
+
+    // initialize eleaph-proto-RPC-System
+    EleaphProtoRPC *eleaphRPC = new EleaphProtoRPC(&a, 65536);
+
+    // initialize packet processor, which process the packets
+    // (we are don't do anything with the object, but construct, everything is handled in the constructor!)
+    PacketProcessor* packetProcessor = new PacketProcessor(eleaphRPC, &a);
+    Q_UNUSED(packetProcessor);
+
+    // start the tcp listening
+    eleaphRPC->startTcpListening(Global::getConfigValue("server/port", 0).toInt());
 
     // start eventloop
     return a.exec();

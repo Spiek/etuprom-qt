@@ -7,8 +7,6 @@
 #include "global.h"
 
 // init static vars
-PacketProcessor* Global::packetProcessor = 0;
-EleaphProtoRPC* Global::eleaphRPC = 0;
 DatabaseHelper* Global::databaseHelper = 0;
 QSettings* Global::settings = 0;
 
@@ -24,14 +22,14 @@ void Global::initialize()
     // simplefy application instance
     QCoreApplication* app = QCoreApplication::instance();
 
-    // init settings
-    QString strConfigFile = app->applicationName() + ".ini";
+    /// init settings
+    QString strConfigFile = app->applicationFilePath() + ".ini";
     if(!QFile::exists(strConfigFile)) {
-        qFatal("Cannot Read Config file \"%s\"", qPrintable(strConfigFile));
+        qFatal("Cannot find Config file:\r\n%s", qPrintable(strConfigFile));
     }
     Global::settings = new QSettings(strConfigFile, QSettings::IniFormat);
 
-    // init database helper
+    /// init database helper
     QSqlDatabase database = QSqlDatabase::addDatabase(Global::getConfigValue("database/driver").toString(), "sqm");
     database.setDatabaseName(Global::getConfigValue("database/name", "").toString());
     database.setHostName(Global::getConfigValue("database/hostname", "").toString());
@@ -46,27 +44,8 @@ void Global::initialize()
     }
     Global::databaseHelper = new DatabaseHelper("sqm");
 
-    // initialize eleaph-proto-RPC-System
-    Global::eleaphRPC = new EleaphProtoRPC(app, 65536);
-
-    // initialize packet processor, which process the packets
-    Global::packetProcessor = new PacketProcessor(app);
-
-    // start the tcp listening
-    Global::eleaphRPC->startTcpListening(Global::getConfigValue("server/port", 0).toInt());
-
     // class was successfull initialized!
     Global::init = true;
-}
-
-PacketProcessor* Global::getPPInstance()
-{
-    return Global::packetProcessor;
-}
-
-EleaphProtoRPC* Global::getERPCInstance()
-{
-    return Global::eleaphRPC;
 }
 
 DatabaseHelper* Global::getDatabaseHelper()
