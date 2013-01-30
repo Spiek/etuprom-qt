@@ -11,7 +11,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QSettings>
 #include <QtCore/QVariant>
-#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 
 // own libs
 #include "databasehelper.h"

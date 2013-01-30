@@ -23,7 +23,7 @@ void Global::initialize()
     QCoreApplication* app = QCoreApplication::instance();
 
     /// init settings
-    QString strConfigFile = app->applicationFilePath() + ".ini";
+    QString strConfigFile = QFileInfo(app->applicationFilePath()).baseName() + ".ini";
     if(!QFile::exists(strConfigFile)) {
         qFatal("Cannot find Config file:\r\n%s", qPrintable(strConfigFile));
     }
