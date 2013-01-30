@@ -47,12 +47,12 @@ class MainWindow : public QMainWindow
     private slots:
         // Socket slots
         void serverConnectionError(QAbstractSocket::SocketError socketError);
-        //void userInformationsReceived(Protocol::UserInformations userInformations);
         void contactListUserAltered(Protocol::User user);
 
         // GUI slots
         void onUserClicked(QTreeWidgetItem* widgetClicked, int column);
         void constructContactList();
+        void setupLoggedInUser();
 
         // Protocol slots (server --> client)
         void handleUserAltered(DataPacket *dataPacket);

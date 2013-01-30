@@ -29,6 +29,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->chatBox = new ChatBox;
     this->chatBox->loadDesign("Orchid");
+
+    // setup main user
+    this->setupLoggedInUser();
 }
 
 MainWindow::~MainWindow()
@@ -37,6 +40,12 @@ MainWindow::~MainWindow()
     delete this->chatBox;
 }
 
+
+void MainWindow::setupLoggedInUser()
+{
+    // set user data
+    this->ui->labelUsername->setText(QString::fromStdString(Global::user->username()));
+}
 
 void MainWindow::serverConnectionError(QAbstractSocket::SocketError socketError)
 {
