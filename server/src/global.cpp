@@ -10,11 +10,9 @@
 PacketProcessor* Global::packetProcessor = 0;
 EleaphProtoRPC* Global::eleaphRPC = 0;
 DatabaseHelper* Global::databaseHelper = 0;
+QSettings* Global::settings = 0;
 
 bool Global::init = false;
-
-// Fixme: make it dynamic with a config file
-quint16 Global::intListenPort = 1234;
 
 void Global::initialize()
 {
@@ -26,15 +24,27 @@ void Global::initialize()
     // simplefy application instance
     QCoreApplication* app = QCoreApplication::instance();
 
+    // init settings
+    QString strConfigFile = app->applicationName() + ".ini";
+    if(!QFile::exists(strConfigFile)) {
+        qFatal("Cannot Read Config file \"%s\"", qPrintable(strConfigFile));
+    }
+    Global::settings = new QSettings(strConfigFile, QSettings::IniFormat);
+
     // init database helper
-    QSqlDatabase database = QSqlDatabase::addDatabase("QODBC", "sqm");
-    database.setDatabaseName("sqm");
+    QSqlDatabase database = QSqlDatabase::addDatabase(Global::getConfigValue("database/driver").toString(), "sqm");
+    database.setDatabaseName(Global::getConfigValue("database/name", "").toString());
+    database.setHostName(Global::getConfigValue("database/hostname", "").toString());
+    database.setPort(Global::getConfigValue("database/port", 0).toInt());
+    database.setUserName(Global::getConfigValue("database/username", "").toString());
+    database.setPassword(Global::getConfigValue("database/password", "").toString());
+    database.setConnectOptions(Global::getConfigValue("database/connectoptions", "").toString());
     if(database.open()) {
         printf("Datenbank Verbindung erfolgreich!");
-        Global::databaseHelper = new DatabaseHelper("sqm");
     } else {
         qFatal("Datenbank Verbindung NICHT erfolgreich!");
     }
+    Global::databaseHelper = new DatabaseHelper("sqm");
 
     // initialize eleaph-proto-RPC-System
     Global::eleaphRPC = new EleaphProtoRPC(app, 65536);
@@ -43,7 +53,7 @@ void Global::initialize()
     Global::packetProcessor = new PacketProcessor(app);
 
     // start the tcp listening
-    Global::eleaphRPC->startTcpListening(Global::intListenPort);
+    Global::eleaphRPC->startTcpListening(Global::getConfigValue("server/port", 0).toInt());
 
     // class was successfull initialized!
     Global::init = true;
@@ -62,4 +72,27 @@ EleaphProtoRPC* Global::getERPCInstance()
 DatabaseHelper* Global::getDatabaseHelper()
 {
     return Global::databaseHelper;
+}
+
+
+QVariant Global::getConfigValue(QString strKey, QVariant varDefault, bool boolSync)
+{
+    // sync before read, if user want it
+    if(boolSync) {
+        Global::settings->sync();
+    }
+
+    // return needed value
+    return Global::settings->value(strKey, varDefault);
+}
+
+void Global::setConfigValue(QString strKey, QVariant varValue, bool boolSync)
+{
+    // set the value
+    Global::settings->setValue(strKey, varValue);
+
+    // sync after write, if user want it
+    if(boolSync) {
+        Global::settings->sync();
+    }
 }
