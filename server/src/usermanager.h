@@ -58,7 +58,7 @@ class Usermanager : public QObject
         void handle_client_disconnect(QIODevice *device);
         void handleLogin(DataPacket* dataPacket);
         void handleLogout(DataPacket* dataPacket);
-        void handleUserInfo(DataPacket* dataPacket);
+        void handleUserInfoSelf(DataPacket* dataPacket);
 };
 
 #endif // USERMANAGER_H

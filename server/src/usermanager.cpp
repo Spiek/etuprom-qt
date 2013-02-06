@@ -16,7 +16,7 @@ Usermanager::Usermanager(PacketProcessor *packetProcessor, QObject *parent) : QO
     this->connect(eleaphRpc, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
     eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(DataPacket*)));
     eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(DataPacket*)));
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_GET_INFO, this, SLOT(handleUserInfo(DataPacket*)));
+    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(DataPacket*)));
 }
 
 Usermanager::~Usermanager()
@@ -200,7 +200,7 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     this->addUser(dataPacket->ioPacketDevice, user);
 }
 
-void Usermanager::handleUserInfo(DataPacket *dataPacket)
+void Usermanager::handleUserInfoSelf(DataPacket *dataPacket)
 {
     // get the logged in user, if the given user is not logged in, don't handle the packet
     Protocol::User *user = this->mapSocketUser.value(dataPacket->ioPacketDevice, (Protocol::User*)0);
@@ -209,7 +209,7 @@ void Usermanager::handleUserInfo(DataPacket *dataPacket)
     }
 
     // send the user it's user data
-    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_USER_GET_INFO, user->SerializeAsString());
+    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_USER_SELF_GET_INFO, user->SerializeAsString());
 }
 
 void Usermanager::handleLogout(DataPacket *dataPacket)

@@ -41,7 +41,7 @@ class Contactmanager;
 // User Module
 #define PACKET_DESCRIPTOR_USER_LOGIN "user.login"
 #define PACKET_DESCRIPTOR_USER_LOGOUT "user.logout"
-#define PACKET_DESCRIPTOR_USER_GET_INFO "user.getinfo"
+#define PACKET_DESCRIPTOR_USER_SELF_GET_INFO "user.self.getinfo"
 
 // Contact Module (require User Module)
 #define PACKET_DESCRIPTOR_CONTACT_GET_LIST "contact.getlist"
