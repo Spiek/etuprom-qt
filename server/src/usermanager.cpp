@@ -14,8 +14,9 @@ Usermanager::Usermanager(PacketProcessor *packetProcessor, QObject *parent) : QO
     // handle client disconnects
     EleaphProtoRPC* eleaphRpc = packetProcessor->getEleaphRpc();
     this->connect(eleaphRpc, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
-    eleaphRpc->registerRPCMethod("login", this, SLOT(handleLogin(DataPacket*)));
-    eleaphRpc->registerRPCMethod("logout", this, SLOT(handleLogout(DataPacket*)));
+    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(DataPacket*)));
+    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(DataPacket*)));
+    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_GET_INFO, this, SLOT(handleUserInfo(DataPacket*)));
 }
 
 Usermanager::~Usermanager()
@@ -49,28 +50,8 @@ void Usermanager::userChanged(QIODevice *device, bool refreshUser)
         this->refreshUser(userChanged);
     }
 
-    // select all users from changed user's contact list which are online
-    Protocol::Users users;
-
-    // if no contact in contact list of changed user is online, don't inform anyone
-    if(!Global::getDatabaseHelper()->getAllOnlineContactsByUserId(userChanged->id(), &users)) {
-        return;
-    }
-
-    // ... otherwise inform all online contacts of the altered user (one by one) about the change
-    for(int i = 0; i < users.user_size(); i++) {
-        // extract needed values from protobuf message
-        qint32 intUserIdOfUserToInform = users.mutable_user(i)->id();
-
-        // get device of conntected user, and skip him if he isn't really contected (if no device was found!)
-        QIODevice *deviceOfUserToInform = this->getConnectedDevice(intUserIdOfUserToInform);
-        if(!deviceOfUserToInform || deviceOfUserToInform == device) {
-            continue;
-        }
-
-        // inform connected user in contactlist of changed user, about the change
-        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(deviceOfUserToInform, "user_altered", userChanged->SerializeAsString());
-    }
+    // tell the outside world about user change
+    emit this->sigUserChanged(userChanged, device, refreshUser);
 }
 
 
@@ -120,7 +101,7 @@ void Usermanager::removeUser(Protocol::User *user)
     user->set_online(false);
     Global::getDatabaseHelper()->updateUserOnlineStateById(user, false);
 
-    // ... and inform all users which belongs to the user's contacht list about users state change
+    // ... and inform all users which belongs to the user's contact list about users state change
     this->userChanged(user->id(), false);
 
     // REMOVE USER
@@ -179,6 +160,10 @@ void Usermanager::handle_client_disconnect(QIODevice *device)
     }
 }
 
+//
+// Packet handlings
+//
+
 void Usermanager::handleLogin(DataPacket* dataPacket)
 {
     // simplefy login packet values
@@ -190,9 +175,11 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     QString strUsername = QString::fromStdString(request.username());
     QString strPassword  = QString::fromStdString(request.password());
 
-    // search for user
+    // construct Default User (which will contain the matched user, if found)
+    Protocol::User *user = new Protocol::User;
+
+    // simplefy object access
     DatabaseHelper *databaseHelper = Global::getDatabaseHelper();
-    Protocol::User* user = new Protocol::User;
 
     // inform the client if the user was found, or not
     Protocol::LoginResponse response;
@@ -201,7 +188,7 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     } else {
         response.set_type(Protocol::LoginResponse_Type_Success);
     }
-    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, "login", response.SerializeAsString());
+    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
 
     // if login wasn't successfull, delte constructed user and end here
     if(response.type() == Protocol::LoginResponse_Type_LoginIncorect) {
@@ -211,17 +198,18 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
 
     // add user to the usermanager
     this->addUser(dataPacket->ioPacketDevice, user);
+}
 
-    // send the user information about the user who want to login
-    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, "user", user->SerializeAsString());
-
-    // get (if available) all contacts from logged in user and send the list to the logged in user, otherwise send empty packet
-    Protocol::ContactList contactList;
-    if(databaseHelper->getContactsByUserId(user->id(), &contactList)) {
-        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist", contactList.SerializeAsString());
-    } else {
-        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, "contactlist");
+void Usermanager::handleUserInfo(DataPacket *dataPacket)
+{
+    // get the logged in user, if the given user is not logged in, don't handle the packet
+    Protocol::User *user = this->mapSocketUser.value(dataPacket->ioPacketDevice, (Protocol::User*)0);
+    if(!user) {
+        return;
     }
+
+    // send the user it's user data
+    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_USER_GET_INFO, user->SerializeAsString());
 }
 
 void Usermanager::handleLogout(DataPacket *dataPacket)

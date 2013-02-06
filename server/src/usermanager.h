@@ -25,6 +25,10 @@
 class Usermanager : public QObject
 {
     Q_OBJECT
+
+    signals:
+        void sigUserChanged(Protocol::User* userChanged, QIODevice *deviceProducerOfChange, bool userRefreshed);
+
     public:
         // con and decon
         Usermanager(PacketProcessor *packetProcessor, QObject *parent = 0);
@@ -54,6 +58,7 @@ class Usermanager : public QObject
         void handle_client_disconnect(QIODevice *device);
         void handleLogin(DataPacket* dataPacket);
         void handleLogout(DataPacket* dataPacket);
+        void handleUserInfo(DataPacket* dataPacket);
 };
 
 #endif // USERMANAGER_H

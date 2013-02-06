@@ -20,14 +20,35 @@ class PacketProcessor;
 #include "EleaphProtoRpc"
 #include "global.h"
 
-// sub managers
+// protocol manager's
 #include "usermanager.h"
 #include "chatmanager.h"
+#include "contactmanager.h"
 
 // forward declaration, becuase of cyrcle including of the sub managers
 // (every submanager need a pointer to the PacketProcessor to access ressources)
 class Usermanager;
 class Chatmanager;
+class Contactmanager;
+
+
+//
+// Packet Descriptors
+//
+// here we define the Protocol Descriptors for all packet types which will be used in PacketProcessor and it's Modules
+//
+
+// User Module
+#define PACKET_DESCRIPTOR_USER_LOGIN "user.login"
+#define PACKET_DESCRIPTOR_USER_LOGOUT "user.logout"
+#define PACKET_DESCRIPTOR_USER_GET_INFO "user.getinfo"
+
+// Contact Module (require User Module)
+#define PACKET_DESCRIPTOR_CONTACT_GET_LIST "contact.getlist"
+#define PACKET_DESCRIPTOR_CONTACT_ALTERED "contact.altered"
+
+// Chatmanager Module
+#define PACKET_DESCRIPTOR_CHAT_PRIVATE "chat.private"
 
 class PacketProcessor : public QObject
 {
@@ -38,11 +59,13 @@ class PacketProcessor : public QObject
         ~PacketProcessor();
         EleaphProtoRPC* getEleaphRpc();
         Usermanager* getUserManager();
+        Contactmanager* getContactManager();
 
     private:
         // sub protocol handlers
         Usermanager *managerUser;
         Chatmanager *managerChat;
+        Contactmanager* managerContact;
 
         // helper methods
         EleaphProtoRPC *eleaphRpc;

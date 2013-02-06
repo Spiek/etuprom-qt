@@ -20,6 +20,7 @@ PacketProcessor::PacketProcessor(EleaphProtoRPC *eleaphRpc, QObject *parent) : Q
     // construct sub manager
     this->managerUser = new Usermanager(this, this);
     this->managerChat = new Chatmanager(this, this);
+    this->managerContact = new Contactmanager(this, this);
 }
 
 PacketProcessor::~PacketProcessor()
@@ -35,4 +36,9 @@ EleaphProtoRPC* PacketProcessor::getEleaphRpc()
 Usermanager* PacketProcessor::getUserManager()
 {
     return this->managerUser;
+}
+
+Contactmanager* PacketProcessor::getContactManager()
+{
+    return this->managerContact;
 }

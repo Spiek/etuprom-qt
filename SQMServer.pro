@@ -24,7 +24,8 @@ SOURCES +=  server/src/main.cpp \
             collective/proto/src/protocol.pb.cc \
             collective/src/ieleaph.cpp \
             server/src/querybuilder.cpp \
-            server/src/chatmanager.cpp
+            server/src/chatmanager.cpp \
+            server/src/contactmanager.cpp
 
 # Headers
 HEADERS +=  \
@@ -36,7 +37,8 @@ HEADERS +=  \
             collective/proto/src/protocol.pb.cc \
             collective/src/ieleaph.h \
             server/src/querybuilder.h \
-            server/src/chatmanager.h
+            server/src/chatmanager.h \
+            server/src/contactmanager.h
 
 # include path
 INCLUDEPATH += "include/"
