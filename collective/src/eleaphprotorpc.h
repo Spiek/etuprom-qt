@@ -14,6 +14,11 @@
 #include <QtCore/QMultiMap>
 #include <QtCore/QMetaObject>
 
+struct EleaphRPCDataPacket : DataPacket
+{
+    QString strMethodName;
+};
+
 class EleaphProtoRPC : public IEleaph
 {
     Q_OBJECT

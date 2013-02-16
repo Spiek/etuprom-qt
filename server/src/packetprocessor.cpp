@@ -26,6 +26,8 @@ PacketProcessor::PacketProcessor(EleaphProtoRPC *eleaphRpc, QObject *parent) : Q
 PacketProcessor::~PacketProcessor()
 {
     delete this->managerUser;
+    delete this->managerChat;
+    delete this->managerContact;
 }
 
 EleaphProtoRPC* PacketProcessor::getEleaphRpc()

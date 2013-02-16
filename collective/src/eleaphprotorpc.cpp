@@ -9,7 +9,7 @@
 EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph(maxDataLength, parent)
 {
     // register the ProtoPacket
-    qRegisterMetaType<DataPacket>("DataPacket");
+    qRegisterMetaType<EleaphRPCDataPacket>("EleaphRPCDataPacket");
 }
 
 //
@@ -138,6 +138,14 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
     dataPacket->baRawPacketData->remove(0, intRPCPacketLength);
     dataPacket->intPacktLength -= intRPCPacketLength;
 
+    // constuct rpc datapacket (and move all data from DataPacket to EleaphRPCDataPacket)
+    EleaphRPCDataPacket* rpcDataPacket = new EleaphRPCDataPacket;
+    rpcDataPacket->moveFrom(dataPacket, true);
+
+    // set EleaphRPCDataPacket data
+    rpcDataPacket->strMethodName = strMethodName;
+    rpcDataPacket->setRefCounter(this->mapRPCFunctions.values(strMethodName).count());
+
     // ... loop all delegates which are registered for strMethodName, and invoke them one by one
     foreach(EleaphProtoRPC::Delegate *delegate, this->mapRPCFunctions.values(strMethodName)) {
         // simplefy the delegate
@@ -145,7 +153,7 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
         QByteArray method = delegate->method;
 
         // call delegate
-        QMetaObject::invokeMethod(object, method.constData(), Q_ARG(DataPacket*, dataPacket));
+        QMetaObject::invokeMethod(object, method.constData(), Q_ARG(EleaphRPCDataPacket*, rpcDataPacket));
 
         // if we have a single shot procedure connection, remove the delegate from RPCFunction list
         if(delegate->singleShot) {
@@ -153,9 +161,6 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
             delete delegate;
         }
     }
-
-    // after work is done, delete the packert
-    delete dataPacket;
 }
 
 void EleaphProtoRPC::deviceAdded(QIODevice *device)

@@ -12,6 +12,7 @@
 #include <QtCore/QIODevice>
 #include <QtCore/QVariant>
 #include <QtCore/QtEndian>
+#include <QtCore/QMutex>
 
 // qt network libs
 #include <QtNetwork/QTcpServer>
@@ -43,9 +44,150 @@
 //
 struct DataPacket
 {
-    QIODevice* ioPacketDevice;
-    QByteArray* baRawPacketData;
-    PACKETLENGTHTYPE intPacktLength;
+    public:
+        /// Reference counting implementation
+        DataPacket()
+        {
+            this->mutex = new QMutex;
+            this->intRefCounter = 1;
+
+            // construct default values
+            this->ioPacketDevice = 0;
+            this->baRawPacketData = 0;
+        }
+
+        ~DataPacket()
+        {
+            // if ref counter is not 0, let the app crash!
+            if(this->intRefCounter != 0) {
+                qFatal("Try to delete a data packet, which still refer somewhere else (refounter: %i)", this->intRefCounter);
+            }
+
+            // ref counting system cleanup
+            delete this->mutex;
+
+            // data cleanup
+            delete this->baRawPacketData;
+        }
+
+        void setRefCounter(int refCounter, bool threadSave = false)
+        {
+            // lock mutex, if user want thread safety
+            if(threadSave) {
+                this->mutex->lock();
+            }
+
+            // set ref counter
+            this->intRefCounter = refCounter;
+
+            // unlock mutex, if user want thread safety
+            if(threadSave) {
+                mutex->unlock();
+            }
+        }
+
+        void increaseRefCounter(bool threadSave = false)
+        {
+            // lock mutex, if user want thread safety
+            if(threadSave) {
+                this->mutex->lock();
+            }
+
+            // increase ref counter
+            this->intRefCounter++;
+
+            // lock mutex, if user want thread safety
+            if(threadSave) {
+                mutex->unlock();
+            }
+        }
+
+        friend class DataPacketDeallocater;
+
+    private:
+        // reference counting data
+        int intRefCounter;
+        QMutex *mutex;
+
+        void free()
+        {
+            // get dataPacket mutex and lock it
+            QMutex *mutex = this->mutex;
+            mutex->lock();
+
+            // decrease reference counter and grab the value
+            int intRefCounter = (--this->intRefCounter);
+
+            // release mutex
+            mutex->unlock();
+
+            // delete data packet after reference counter reached 0
+            if(intRefCounter == 0) {
+                delete this;
+            }
+        }
+
+    public:
+        // data helper
+        virtual void moveFrom(DataPacket *dataPacketSrc, bool deleteSrc = false, bool threadSave = false)
+        {
+            // lock src and target mutex, if user want thread safety
+            if(threadSave) {
+                dataPacketSrc->mutex->lock();
+                this->mutex->lock();
+            }
+
+            // move intRefCounter from dataPacketSrc to this
+            this->intRefCounter = dataPacketSrc->intRefCounter;
+
+            // move baRawPacketData from dataPacketSrc to this (be sure that no memory leaks occour!)
+            if(this->baRawPacketData) {
+                delete this->baRawPacketData;
+            }
+            this->baRawPacketData = dataPacketSrc->baRawPacketData;
+
+            // move Datapacket data from src to this
+            this->ioPacketDevice = dataPacketSrc->ioPacketDevice;
+            this->intPacktLength = dataPacketSrc->intPacktLength;
+
+            // if user want that the src becomes deleted,
+            // construct default values in src (so that the deconstruction process doesn't fail)
+            if(deleteSrc) {
+                dataPacketSrc->baRawPacketData = new QByteArray;
+                dataPacketSrc->setRefCounter(0, false);
+                delete dataPacketSrc;
+            }
+
+            // release target mutex (and if user want no deletion of src the src mutex, too), if user want thread safety
+            if(threadSave) {
+                this->mutex->unlock();
+                if(!deleteSrc) {
+                    dataPacketSrc->mutex->unlock();
+                }
+            }
+        }
+
+        // data
+        QIODevice* ioPacketDevice;
+        QByteArray* baRawPacketData;
+        PACKETLENGTHTYPE intPacktLength;
+};
+
+class DataPacketDeallocater
+{
+    public:
+        DataPacketDeallocater(DataPacket* dataPacket)
+        {
+            this->dataPacket = dataPacket;
+        }
+
+        ~DataPacketDeallocater()
+        {
+            this->dataPacket->free();
+        }
+
+    private:
+        DataPacket *dataPacket;
 };
 
 class IEleaph : public QObject

@@ -7,14 +7,17 @@ Contactmanager::Contactmanager(PacketProcessor *packetProcessor, QObject *parent
 
     // register all needed protocol messages
     EleaphProtoRPC* eleaphRpc = packetProcessor->getEleaphRpc();
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_GET_LIST, this, SLOT(handleContactList(DataPacket*)));
+    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_GET_LIST, this, SLOT(handleContactList(EleaphRPCDataPacket*)));
 
     // connect all needed signals from other modules
     this->connect(this->packetProcessor->getUserManager(), SIGNAL(sigUserChanged(Protocol::User*,QIODevice*,bool)), this, SLOT(handleContactChange(Protocol::User*,QIODevice*)));
 }
 
-void Contactmanager::handleContactList(DataPacket *dataPacket)
+void Contactmanager::handleContactList(EleaphRPCDataPacket *dataPacket)
 {
+    // init Datapacket Releaser
+    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
+
     // get the logged in user, if the given user is not logged in, don't handle the packet
     Protocol::User *user = this->packetProcessor->getUserManager()->getConnectedUser(dataPacket->ioPacketDevice);
     if(!user) {

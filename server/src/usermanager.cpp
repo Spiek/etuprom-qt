@@ -14,9 +14,9 @@ Usermanager::Usermanager(PacketProcessor *packetProcessor, QObject *parent) : QO
     // handle client disconnects
     EleaphProtoRPC* eleaphRpc = packetProcessor->getEleaphRpc();
     this->connect(eleaphRpc, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(DataPacket*)));
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(DataPacket*)));
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(DataPacket*)));
+    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRPCDataPacket*)));
+    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRPCDataPacket*)));
+    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRPCDataPacket*)));
 }
 
 Usermanager::~Usermanager()
@@ -164,8 +164,11 @@ void Usermanager::handle_client_disconnect(QIODevice *device)
 // Packet handlings
 //
 
-void Usermanager::handleLogin(DataPacket* dataPacket)
+void Usermanager::handleLogin(EleaphRPCDataPacket* dataPacket)
 {
+    // init Datapacket Releaser
+    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
+
     // simplefy login packet values
     Protocol::LoginRequest request;
     if(!request.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
@@ -200,8 +203,11 @@ void Usermanager::handleLogin(DataPacket* dataPacket)
     this->addUser(dataPacket->ioPacketDevice, user);
 }
 
-void Usermanager::handleUserInfoSelf(DataPacket *dataPacket)
+void Usermanager::handleUserInfoSelf(EleaphRPCDataPacket* dataPacket)
 {
+    // init Datapacket Releaser
+    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
+
     // get the logged in user, if the given user is not logged in, don't handle the packet
     Protocol::User *user = this->mapSocketUser.value(dataPacket->ioPacketDevice, (Protocol::User*)0);
     if(!user) {
@@ -212,8 +218,11 @@ void Usermanager::handleUserInfoSelf(DataPacket *dataPacket)
     this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_USER_SELF_GET_INFO, user->SerializeAsString());
 }
 
-void Usermanager::handleLogout(DataPacket *dataPacket)
+void Usermanager::handleLogout(EleaphRPCDataPacket* dataPacket)
 {
+    // init Datapacket Releaser
+    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
+
     // if the given device is logged in, log the device/user off
     QIODevice* device = dataPacket->ioPacketDevice;
     if(this->mapSocketUser.contains(device)) {
