@@ -10,6 +10,9 @@
 // Qt (core)
 #include <QtGui/QApplication>
 #include <QtCore/QMap>
+#include <QtCore/QSettings>
+#include <QtCore/QVariant>
+#include <QtCore/QFileInfo>
 
 // Qt (network)
 #include <QtNetwork/QTcpSocket>
@@ -35,7 +38,10 @@ class Global
         static void initialize();
 
     private:
+	// settings
+	static QSettings *settings;
         static bool init;
 };
 
 #endif // GLOBAL_H
+

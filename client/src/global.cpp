@@ -14,6 +14,7 @@ bool Global::boolLoggedIn = false;
 QMap<qint32, Protocol::Contact*> Global::mapContactList;
 QMap<qint32, Protocol::User*> Global::mapCachedUsers;
 Protocol::User* Global::user = 0;
+QSettings* Global::settings = 0;
 
 // Fixme: make it dynamic with a config file
 QString Global::strServerHostname = "localhost";
@@ -28,6 +29,19 @@ void Global::initialize()
 
     // simplefy application instance
     QCoreApplication* app = QApplication::instance();
+
+
+    // init settings
+    QString strConfigFile = QFileInfo(app->applicationFilePath()).baseName() + ".ini";
+    if(!QFile::exists(strConfigFile)) {
+        qFatal("Cannot find Config file:\r\n%s", qPrintable(strConfigFile));
+    }
+    Global::settings = new QSettings(strConfigFile, QSettings::IniFormat);
+
+
+    Global::strServerHostname = Global::settings->value("server/hostname", Global::strServerHostname).toString();
+    Global::intServerPort = Global::settings->value("server/port", Global::intServerPort).toUInt();
+
 
     // init socket
     Global::socketServer = new QTcpSocket(app);
