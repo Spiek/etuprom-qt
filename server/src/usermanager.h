@@ -1,3 +1,9 @@
+/*
+ * This work is licensed under the Creative Commons Attribution 3.0 Unported License.
+ * To view a copy of this license, visit http://creativecommons.org/licenses/by/3.0/
+ * or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
+ */
+ 
 #ifndef USERMANAGER_H
 #define USERMANAGER_H
 
@@ -12,21 +18,25 @@
 #include <QtSql/QSqlQuery>
 
 // own libs
-#include "global.h"
-
-// protobuf libs
+#include "packetprocessor.h"
 #include "protocol.pb.h"
+#include "global.h"
 
 class Usermanager : public QObject
 {
     Q_OBJECT
-    public:
-        // protocol helper methods
-        void userChanged(QIODevice *device);
-        void userChanged(qint32 userid);
 
-        // database user helper methods
-        Protocol::User* setUserfromQuery(QSqlQuery *query,  Protocol::User* user = 0);
+    signals:
+        void sigUserChanged(Protocol::User* userChanged, QIODevice *deviceProducerOfChange, bool userRefreshed);
+
+    public:
+        // con and decon
+        Usermanager(PacketProcessor *packetProcessor, QObject *parent = 0);
+        ~Usermanager();
+
+        // protocol helper methods
+        void userChanged(QIODevice *device, bool refreshUser = true);
+        void userChanged(qint32 userid, bool refreshUser = true);
 
         // user managment helper methods
         void addUser(QIODevice *device, Protocol::User *user);
@@ -34,7 +44,7 @@ class Usermanager : public QObject
         void removeUser(QIODevice *device);
         bool isLoggedIn(QIODevice *device);
         bool isLoggedIn(qint32 userID);
-        Protocol::User* refreshUser(Protocol::User *user);
+        bool refreshUser(Protocol::User *user);
         Protocol::User* getConnectedUser(QIODevice *device);
         Protocol::User* getConnectedUser(qint32 userid);
         QIODevice* getConnectedDevice(qint32 userid);
@@ -42,18 +52,13 @@ class Usermanager : public QObject
     private:
         QMap<QIODevice*, Protocol::User*> mapSocketUser;
         QMap<qint32, QPair<QIODevice*, Protocol::User*> > mapIdUser;
+        PacketProcessor *packetProcessor;
 
-    // Singelton members
-    private:
-        static Usermanager *userManager;
-
-    protected:
-        Usermanager(QObject *parent = 0);
-        ~Usermanager();
-
-    public:
-        static void create(QObject *parent = 0);
-        static Usermanager* getInstance();
+    private slots:
+        void handle_client_disconnect(QIODevice *device);
+        void handleLogin(EleaphRPCDataPacket* dataPacket);
+        void handleLogout(EleaphRPCDataPacket* dataPacket);
+        void handleUserInfoSelf(EleaphRPCDataPacket* dataPacket);
 };
 
 #endif // USERMANAGER_H

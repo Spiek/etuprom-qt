@@ -12,33 +12,35 @@ TARGET = SQMClient
 TEMPLATE = app
 
 # Sources (collective)
-SOURCES +=  collective/src/sqmpackethandler.cpp \
-			collective/proto/src/protocol.pb.cc
+SOURCES +=  collective/src/eleaphprotorpc.cpp \
+            collective/proto/src/protocol.pb.cc \
+            collective/src/ieleaph.cpp
 
 # Sources (client)
 SOURCES +=  client/src/main.cpp\
-			client/src/mainwindow.cpp \
-			client/src/sqmpacketprocessor.cpp \
-			client/src/loginform.cpp \
-			client/src/global.cpp \
-			client/src/chatbox.cpp
+            client/src/mainwindow.cpp \
+            client/src/loginform.cpp \
+            client/src/global.cpp \
+            client/src/chatbox.cpp \
+            client/src/designloader.cpp
 
 # Headers (collective)
-HEADERS  += collective/src/sqmpackethandler.h \
-			collective/proto/src/protocol.pb.h
+HEADERS  += collective/src/eleaphprotorpc.h \
+            collective/proto/src/protocol.pb.cc \
+            collective/src/ieleaph.h
 
 # Headers (client)
 HEADERS  += client/src/mainwindow.h  \
-			client/src/sqmpacketprocessor.h \
-			client/src/loginform.h \
-			client/src/global.h \
-			client/src/chatbox.h
+            client/src/loginform.h \
+            client/src/global.h \
+            client/src/chatbox.h \
+            client/src/designloader.h
 
 # Forms
 FORMS    += client/ui/mainwindow.ui \
-			client/ui/loginform.ui \
-			client/ui/chatTab.ui \
-			client/ui/chatbox.ui
+            client/ui/loginform.ui \
+            client/ui/chatTab.ui \
+            client/ui/chatbox.ui
 
 # Ressource files
 RESOURCES += client/res/global.qrc
@@ -58,16 +60,16 @@ Prototargetdir = $$Protosrcdir/src
 
 # remove all existing compiled .proto files
 win32 {
-    system("del \"$$Prototargetdir\"\\*.h")
-    system("del \"$$Prototargetdir\"\\*.cc")
+        system("del \"$$Prototargetdir\"\\*.h")
+        system("del \"$$Prototargetdir\"\\*.cc")
 }
 linux {
-    system("rm -f $$Prototargetdir/*.h")
-    system("rm -f $$Prototargetdir/*.cc")
+        system("rm -f $$Prototargetdir/*.h")
+        system("rm -f $$Prototargetdir/*.cc")
 }
 
 # ...and recompile them
-system(protoc -I=$$Protosrcdir --cpp_out=$$Prototargetdir $$Protosrcdir/*.proto)
+system(protoc -I=\"$$Protosrcdir\" --cpp_out=\"$$Prototargetdir\" \"$$Protosrcdir\"/*.proto)
 
 # link against protobuf lib (we can't do that in mkspecs because the protobuf lib has to be set as last lib)
 LIBS += -lprotobuf

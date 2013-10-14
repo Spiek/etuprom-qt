@@ -13,25 +13,39 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    // make sure that the gui was complete constructed
-    QApplication::processEvents(QEventLoop::ExcludeSocketNotifiers);
-
     // signal --> slot connections (Socket)
     this->connect(Global::socketServer, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(serverConnectionError(QAbstractSocket::SocketError)));
 
     // signal --> slot connections (PacketProcessor)
-    this->connect(Global::packetProcessor, SIGNAL(userInformationsReceived(Protocol::UserInformations)), this, SLOT(userInformationsReceived(Protocol::UserInformations)));
-    this->connect(Global::packetProcessor, SIGNAL(userAltered(Protocol::User)), this, SLOT(contactListUserAltered(Protocol::User)));
+    Global::eleaphRpc->registerRPCMethod("user_altered", this, SLOT(handleUserAltered(DataPacket*)));
 
     // handle double click event of new user
     this->connect(this->ui->treeWidgetContactList, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onUserClicked(QTreeWidgetItem*,int)));
+    this->connect(this->ui->actionLogout, SIGNAL(triggered()), this, SLOT(handleLogout()));
+    this->connect(this->ui->actionExit, SIGNAL(triggered()), this, SLOT(deleteLater()));
+
+    // create contact list
+    this->constructContactList();
+
+    this->chatBox = new ChatBox;
+    this->chatBox->loadDesign("Orchid");
+
+    // setup main user
+    this->setupLoggedInUser();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete this->chatBox;
 }
 
+
+void MainWindow::setupLoggedInUser()
+{
+    // set user data
+    this->ui->labelUsername->setText(QString::fromStdString(Global::user->username()));
+}
 
 void MainWindow::serverConnectionError(QAbstractSocket::SocketError socketError)
 {
@@ -42,23 +56,43 @@ void MainWindow::serverConnectionError(QAbstractSocket::SocketError socketError)
     loginForm->show();
 }
 
-void MainWindow::userInformationsReceived(Protocol::UserInformations userInformations)
+void MainWindow::constructContactList()
 {
-    // toptreewidget items for the group assigment
-    QMap<QString, QTreeWidgetItem*> mapTopTreeWidgetItems;
+    // remove all users form contact list
+    this->ui->treeWidgetContactList->clear();
 
-    // loop contacts in contact list and all needed gui elements
-    for(int i = 0;i<userInformations.contact_size();i++) {
-        // simplefy contact
-        Protocol::Contact *contact = userInformations.mutable_contact(i);
-
-        // setup user
+    // loop contacts in contact list and construct all needed gui elements
+    foreach(Protocol::Contact* contact, Global::mapContactList.values()) {
         this->setupUser(contact->mutable_user(), QString::fromStdString(contact->group()));
     }
 
     // expand all groups
     this->ui->treeWidgetContactList->expandAll();
 }
+
+void MainWindow::handleUserAltered(DataPacket *dataPacket)
+{
+    Protocol::User user;
+    user.ParseFromArray(dataPacket->baRawPacketData->data(), dataPacket->baRawPacketData->length());
+    this->contactListUserAltered(user);
+}
+
+void MainWindow::handleLogout()
+{
+    // cleanup all variable global data
+    qDeleteAll(Global::mapContactList.values());
+    qDeleteAll(Global::mapCachedUsers.values());
+    Global::mapContactList.clear();
+    Global::mapCachedUsers.clear();
+
+    // process logout
+    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "logout");
+    this->deleteLater();
+    LoginForm *loginForm = new LoginForm("Successfull logged out...");
+    loginForm->show();
+}
+
+
 
 void MainWindow::contactListUserAltered(Protocol::User user)
 {
@@ -136,6 +170,5 @@ void MainWindow::onUserClicked(QTreeWidgetItem *widgetClicked, int column)
     Protocol::User *user = this->mapIdUser.value(userId);
 
     // add user to chatBox and show the chatBox
-    this->chatBox.addNewUser(user);
-    this->chatBox.show();
+    this->chatBox->addNewUser(user);
 }
