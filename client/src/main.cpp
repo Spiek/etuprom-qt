@@ -21,8 +21,8 @@ int main(int argc, char *argv[])
     // init global class
     Global::initialize();
 
-    // init main gui
-    LoginForm* formLogin = new LoginForm;
+    // init login form
+    LoginForm *formLogin = new LoginForm;
     formLogin->show();
 
     // start eventloop

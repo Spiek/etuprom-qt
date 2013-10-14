@@ -9,28 +9,39 @@
 
 // Qt (core)
 #include <QtGui/QApplication>
+#include <QtCore/QMap>
+#include <QtCore/QSettings>
+#include <QtCore/QVariant>
+#include <QtCore/QFileInfo>
 
 // Qt (network)
 #include <QtNetwork/QTcpSocket>
 
 // own (collective)
-#include "SQMPacketHandler"
-
-// own (client)
-#include "sqmpacketprocessor.h"
+#include "EleaphProtoRpc"
+#include "protocol.pb.h"
 
 class Global
 {
     public:
         static QTcpSocket *socketServer;
-        static SQMPacketProcessor *packetProcessor;
-        static SQMPacketHandler *packetHandler;
+        static EleaphProtoRPC *eleaphRpc;
         static QString strServerHostname;
         static quint16 intServerPort;
+        static bool boolLoggedIn;
+        static Protocol::User* user;
+
+        // protocol implementations
+        static QMap<qint32, Protocol::Contact*> mapContactList;
+        static QMap<qint32, Protocol::User*> mapCachedUsers;
+
         static void initialize();
 
     private:
+	// settings
+	static QSettings *settings;
         static bool init;
 };
 
 #endif // GLOBAL_H
+

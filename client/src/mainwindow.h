@@ -19,7 +19,6 @@
 #include "loginform.h"
 #include "chatbox.h"
 
-
 namespace Ui {
     class MainWindow;
 }
@@ -43,19 +42,23 @@ class MainWindow : public QMainWindow
         void setupUser(Protocol::User *user, QString contactGroup = "");
 
         // designer members
-        ChatBox chatBox;
+        ChatBox* chatBox;
 
     private slots:
         // Socket slots
         void serverConnectionError(QAbstractSocket::SocketError socketError);
-        void userInformationsReceived(Protocol::UserInformations userInformations);
         void contactListUserAltered(Protocol::User user);
 
         // GUI slots
         void onUserClicked(QTreeWidgetItem* widgetClicked, int column);
+        void constructContactList();
+        void setupLoggedInUser();
 
-        // Protocol slots
-        void userSendMessage(int userId, QString strMessage);
+        // Protocol slots (server --> client)
+        void handleUserAltered(DataPacket *dataPacket);
+
+        // Protocol slots (client --> server)
+        void handleLogout();
 };
 
 #endif // MAINWINDOW_H
