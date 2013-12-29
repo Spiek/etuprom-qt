@@ -55,7 +55,7 @@ class MainWindow : public QMainWindow
         void setupLoggedInUser();
 
         // Protocol slots (server --> client)
-        void handleUserAltered(DataPacket *dataPacket);
+        void handleUserAltered(EleaphRpcPacket dataPacket);
 
         // Protocol slots (client --> server)
         void handleLogout();

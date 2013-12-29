@@ -16,21 +16,18 @@ Chatmanager::Chatmanager(PacketProcessor* packetProcessor, QObject *parent) : QO
     eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CHAT_PRIVATE, this, SLOT(handlePrivateChatMessage(EleaphRPCDataPacket*)));
 }
 
-void Chatmanager::handlePrivateChatMessage(EleaphRPCDataPacket *dataPacket)
+void Chatmanager::handlePrivateChatMessage(EleaphRpcPacket dataPacket)
 {
-    // init Datapacket Releaser
-    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
-
     // parse protocol
     Protocol::MessagePrivateClient message;
-    if(!message.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
+    if(!message.ParseFromArray(dataPacket.data->baRawPacketData->constData(), dataPacket.data->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse MessagePrivate", __PRETTY_FUNCTION__ , __LINE__);
         return;
     }
 
     // get some needed data
     Usermanager *userManager = this->packetProcessor->getUserManager();
-    QIODevice *deviceUser = dataPacket->ioPacketDevice;
+    QIODevice *deviceUser = dataPacket.data->ioPacketDevice;
     EleaphProtoRPC *eleaphRpc = this->packetProcessor->getEleaphRpc();
 
     // if sended user is not logged in, then we have a very big protocol violation here!
@@ -40,7 +37,7 @@ void Chatmanager::handlePrivateChatMessage(EleaphRPCDataPacket *dataPacket)
     }
 
     // get some needed informations
-    Protocol::User* userSender = userManager->getConnectedUser(dataPacket->ioPacketDevice);
+    Protocol::User* userSender = userManager->getConnectedUser(dataPacket.data->ioPacketDevice);
     qint32 intUserIdReceiver = message.useridreceiver();
     quint32 intTimeStampCreated = QDateTime::currentMSecsSinceEpoch() / 1000;
     bool boolTransfered = false;

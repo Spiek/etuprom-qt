@@ -19,7 +19,7 @@ class Contactmanager : public QObject
         PacketProcessor *packetProcessor;
 
     private slots:
-        void handleContactList(EleaphRPCDataPacket* dataPacket);
+        void handleContactList(EleaphRpcPacket dataPacket);
         void handleContactChange(Protocol::User* userChanged, QIODevice *deviceProducerOfChange);
 };
 

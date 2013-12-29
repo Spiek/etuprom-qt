@@ -9,7 +9,7 @@
 EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph(maxDataLength, parent)
 {
     // register the ProtoPacket
-    qRegisterMetaType<EleaphRPCDataPacket>("EleaphRPCDataPacket");
+    qRegisterMetaType<EleaphRpcPacket>("EleaphRpcPacket");
 }
 
 //
@@ -113,7 +113,7 @@ void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureNa
     this->sendDataPacket(device, &data);
 }
 
-EleaphRPCDataPacket* EleaphProtoRPC::waitAsyncForPacket(QString strMethod)
+EleaphRpcPacket EleaphProtoRPC::waitAsyncForPacket(QString strMethod)
 {
     ElepahAsyncPacketWaiter packetWaiter(this, strMethod);
 
@@ -134,7 +134,7 @@ EleaphRPCDataPacket* EleaphProtoRPC::waitAsyncForPacket(QString strMethod)
 /*
  * newDataPacketReceived - parse the new received dataPacket and forward it to registered Delegate(s)
  */
-void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
+void EleaphProtoRPC::newDataPacketReceived(EleaphPacketData *dataPacket)
 {
     // extract rpc method name from packet with the help of Qt's Endian method qFromBigEndian
     qint16* ptrPacketLength = (qint16*)dataPacket->baRawPacketData->data();
@@ -152,12 +152,12 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
     dataPacket->intPacktLength -= intRPCPacketLength;
 
     // constuct rpc datapacket (and move all data from DataPacket to EleaphRPCDataPacket)
-    EleaphRPCDataPacket* rpcDataPacket = new EleaphRPCDataPacket;
-    rpcDataPacket->moveFrom(dataPacket, true);
+    ElaphRpcPacketData* rpcDataPacket = new ElaphRpcPacketData;
+    rpcDataPacket->moveFrom(dataPacket);
+    EleaphRpcPacket watcher(rpcDataPacket);
 
     // set EleaphRPCDataPacket data
     rpcDataPacket->strMethodName = strMethodName;
-    rpcDataPacket->setRefCounter(this->mapRPCFunctions.values(strMethodName).count());
 
     // ... loop all delegates which are registered for strMethodName, and invoke them one by one
     foreach(EleaphProtoRPC::Delegate *delegate, this->mapRPCFunctions.values(strMethodName)) {
@@ -166,7 +166,7 @@ void EleaphProtoRPC::newDataPacketReceived(DataPacket *dataPacket)
         QByteArray method = delegate->method;
 
         // call delegate
-        QMetaObject::invokeMethod(object, method.constData(), Q_ARG(EleaphRPCDataPacket*, rpcDataPacket));
+        QMetaObject::invokeMethod(object, method.constData(), Q_ARG(EleaphRpcPacket, watcher));
 
         // if we have a single shot procedure connection, remove the delegate from RPCFunction list
         if(delegate->singleShot) {

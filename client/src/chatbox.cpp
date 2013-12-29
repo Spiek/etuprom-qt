@@ -95,11 +95,11 @@ void ChatBox::chatTextChanged(int userId)
     }
 }
 
-void ChatBox::handleTextMessage(DataPacket *dataPacket)
+void ChatBox::handleTextMessage(EleaphRpcPacket dataPacket)
 {
     // parse protocol
     Protocol::MessagePrivateServer message;
-    if(!message.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
+    if(!message.ParseFromArray(dataPacket.data->baRawPacketData->constData(), dataPacket.data->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse MessagePrivateServer", __PRETTY_FUNCTION__ , __LINE__);
         return;
     }

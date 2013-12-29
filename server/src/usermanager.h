@@ -56,9 +56,9 @@ class Usermanager : public QObject
 
     private slots:
         void handle_client_disconnect(QIODevice *device);
-        void handleLogin(EleaphRPCDataPacket* dataPacket);
-        void handleLogout(EleaphRPCDataPacket* dataPacket);
-        void handleUserInfoSelf(EleaphRPCDataPacket* dataPacket);
+        void handleLogin(EleaphRpcPacket dataPacket);
+        void handleLogout(EleaphRpcPacket dataPacket);
+        void handleUserInfoSelf(EleaphRpcPacket dataPacket);
 };
 
 #endif // USERMANAGER_H

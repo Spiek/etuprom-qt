@@ -50,7 +50,7 @@ class ChatBox : public QMainWindow
         void chatTextChanged(int userId);
 
         // protocol handlers
-        void handleTextMessage(DataPacket *dataPacket);
+        void handleTextMessage(EleaphRpcPacket dataPacket);
 
     protected:
         void closeEvent(QCloseEvent *closeEvent);

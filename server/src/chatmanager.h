@@ -24,7 +24,7 @@ class Chatmanager : public QObject
         PacketProcessor *packetProcessor;
 
     private slots:
-        void handlePrivateChatMessage(EleaphRPCDataPacket* dataPacket);
+        void handlePrivateChatMessage(EleaphRpcPacket dataPacket);
 };
 
 #endif // CHATMANAGER_H

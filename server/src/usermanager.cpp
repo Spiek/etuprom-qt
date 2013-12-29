@@ -164,14 +164,11 @@ void Usermanager::handle_client_disconnect(QIODevice *device)
 // Packet handlings
 //
 
-void Usermanager::handleLogin(EleaphRPCDataPacket* dataPacket)
+void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
 {
-    // init Datapacket Releaser
-    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
-
     // simplefy login packet values
     Protocol::LoginRequest request;
-    if(!request.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
+    if(!request.ParseFromArray(dataPacket.data->baRawPacketData->constData(),  dataPacket.data->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse LoginRequest", __PRETTY_FUNCTION__ , __LINE__);
         return;
     }
@@ -191,7 +188,7 @@ void Usermanager::handleLogin(EleaphRPCDataPacket* dataPacket)
     } else {
         response.set_type(Protocol::LoginResponse_Type_Success);
     }
-    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
+    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket.data->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
 
     // if login wasn't successfull, delte constructed user and end here
     if(response.type() == Protocol::LoginResponse_Type_LoginIncorect) {
@@ -200,31 +197,25 @@ void Usermanager::handleLogin(EleaphRPCDataPacket* dataPacket)
     }
 
     // add user to the usermanager
-    this->addUser(dataPacket->ioPacketDevice, user);
+    this->addUser(dataPacket.data->ioPacketDevice, user);
 }
 
-void Usermanager::handleUserInfoSelf(EleaphRPCDataPacket* dataPacket)
+void Usermanager::handleUserInfoSelf(EleaphRpcPacket dataPacket)
 {
-    // init Datapacket Releaser
-    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
-
     // get the logged in user, if the given user is not logged in, don't handle the packet
-    Protocol::User *user = this->mapSocketUser.value(dataPacket->ioPacketDevice, (Protocol::User*)0);
+    Protocol::User *user = this->mapSocketUser.value(dataPacket.data->ioPacketDevice, (Protocol::User*)0);
     if(!user) {
         return;
     }
 
     // send the user it's user data
-    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_USER_SELF_GET_INFO, user->SerializeAsString());
+    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket.data->ioPacketDevice, PACKET_DESCRIPTOR_USER_SELF_GET_INFO, user->SerializeAsString());
 }
 
-void Usermanager::handleLogout(EleaphRPCDataPacket* dataPacket)
+void Usermanager::handleLogout(EleaphRpcPacket dataPacket)
 {
-    // init Datapacket Releaser
-    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
-
     // if the given device is logged in, log the device/user off
-    QIODevice* device = dataPacket->ioPacketDevice;
+    QIODevice* device = dataPacket.data->ioPacketDevice;
     if(this->mapSocketUser.contains(device)) {
         this->removeUser(device);
     }

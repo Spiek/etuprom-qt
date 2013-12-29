@@ -75,7 +75,7 @@ void IEleaph::removeDevice(QIODevice *device)
 
     // delete (if present) used property for packet cache and the cached DataPacket
     QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
-    DataPacket *packet = (variantStoredPackage.type() == QVariant::Invalid) ? (DataPacket*)0 : (DataPacket*)variantStoredPackage.value<void *>();
+    EleaphPacketData *packet = (variantStoredPackage.type() == QVariant::Invalid) ? (EleaphPacketData*)0 : (EleaphPacketData*)variantStoredPackage.value<void *>();
     ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
     if(packet) {
         delete packet;
@@ -102,18 +102,17 @@ void IEleaph::dataHandler()
         /// <Aquire Data Packet>
         // get the exesting data packet, or if it doesn't exist a 0 Pointer
         QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
-        DataPacket *packet = variantStoredPackage.type() == QVariant::Invalid ? (DataPacket*)0 : (DataPacket*)variantStoredPackage.value<void *>();
+        EleaphPacketData *packet = variantStoredPackage.type() == QVariant::Invalid ? (EleaphPacketData*)0 : (EleaphPacketData*)variantStoredPackage.value<void *>();
 
-        // create new data packet if data packet doesn't exist
+        // create new data packet if data packet doesn't allready exist
         if(!packet) {
-            DataPacket *packetNew = new DataPacket;
-            packet = packetNew;
+            packet = new EleaphPacketData;
 
             // initialize default values and add new packet to progress map
-            packetNew->intPacktLength = 0;
-            packetNew->baRawPacketData = 0;
-            packetNew->ioPacketDevice = ioPacketDevice;
-            ioPacketDevice->setProperty(PROPERTYNAME_PACKET, qVariantFromValue((void *) packetNew));
+            packet->intPacktLength = 0;
+            packet->baRawPacketData = 0;
+            packet->ioPacketDevice = ioPacketDevice;
+            ioPacketDevice->setProperty(PROPERTYNAME_PACKET, qVariantFromValue((void *) packet));
         }
 
         /// </Aquire Data Packet> <-- Packet was successfull aquired!

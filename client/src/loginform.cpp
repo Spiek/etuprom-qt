@@ -129,11 +129,11 @@ void LoginForm::login()
     Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_USER_LOGIN, requestLogin.SerializeAsString());
 
     // wait for packet async and process it
-    EleaphRPCDataPacket *epLoginResponse = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_USER_LOGIN);
+    EleaphRpcPacket epLoginResponse = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_USER_LOGIN);
 
     // parse server response and handle it
     Protocol::LoginResponse responseLogin;
-    responseLogin.ParseFromArray(epLoginResponse->baRawPacketData->data(), epLoginResponse->baRawPacketData->length());
+    responseLogin.ParseFromArray(epLoginResponse.data->baRawPacketData->data(), epLoginResponse.data->baRawPacketData->length());
 
     // inform the user about login wasn't success, reset the password, and let the user login again :-)
     if(responseLogin.type() == Protocol::LoginResponse_Type_LoginIncorect) {
@@ -156,11 +156,11 @@ void LoginForm::getNeededDataForMainForm()
     // request own user data from server
     this->ui->statusbar->showMessage("Get Userdata...");
     Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_USER_SELF_GET_INFO);
-    EleaphRPCDataPacket *epUserSelf = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_USER_SELF_GET_INFO);
+    EleaphRpcPacket epUserSelf = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_USER_SELF_GET_INFO);
 
    // parse and handle own user data
     Protocol::User *user = new Protocol::User;
-    if(!user->ParseFromArray(epUserSelf->baRawPacketData->constData(), epUserSelf->baRawPacketData->length())) {
+    if(!user->ParseFromArray(epUserSelf.data->baRawPacketData->constData(), epUserSelf.data->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
         return;
     }
@@ -175,14 +175,14 @@ void LoginForm::getNeededDataForMainForm()
     // request contact list from server
     this->ui->statusbar->showMessage("Get Contactlist...");
     Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_CONTACT_GET_LIST);
-    EleaphRPCDataPacket *epContactList = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_CONTACT_GET_LIST);
+    EleaphRpcPacket epContactList = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_CONTACT_GET_LIST);
 
     // if no contact list was given skip contact list handling
     Global::mapContactList.clear();
-    if(epContactList->baRawPacketData->length() > 0)  {
+    if(epContactList.data->baRawPacketData->length() > 0)  {
         // parse and handle contact list
         Protocol::ContactList contactList;
-        if(!contactList.ParseFromArray(epContactList->baRawPacketData->constData(), epContactList->baRawPacketData->length())) {
+        if(!contactList.ParseFromArray(epContactList.data->baRawPacketData->constData(), epContactList.data->baRawPacketData->length())) {
             qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
             return;
         }

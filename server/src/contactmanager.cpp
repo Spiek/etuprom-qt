@@ -13,13 +13,10 @@ Contactmanager::Contactmanager(PacketProcessor *packetProcessor, QObject *parent
     this->connect(this->packetProcessor->getUserManager(), SIGNAL(sigUserChanged(Protocol::User*,QIODevice*,bool)), this, SLOT(handleContactChange(Protocol::User*,QIODevice*)));
 }
 
-void Contactmanager::handleContactList(EleaphRPCDataPacket *dataPacket)
+void Contactmanager::handleContactList(EleaphRpcPacket dataPacket)
 {
-    // init Datapacket Releaser
-    volatile DataPacketDeallocater datapacketDeallocator(dataPacket);
-
     // get the logged in user, if the given user is not logged in, don't handle the packet
-    Protocol::User *user = this->packetProcessor->getUserManager()->getConnectedUser(dataPacket->ioPacketDevice);
+    Protocol::User *user = this->packetProcessor->getUserManager()->getConnectedUser(dataPacket.data->ioPacketDevice);
     if(!user) {
         return;
     }
@@ -30,9 +27,9 @@ void Contactmanager::handleContactList(EleaphRPCDataPacket *dataPacket)
     // get (if available) all contacts from logged in user and send the list to the logged in user, otherwise send empty packet
     Protocol::ContactList contactList;
     if(databaseHelper->getContactsByUserId(user->id(), &contactList)) {
-        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST, contactList.SerializeAsString());
+        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket.data->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST, contactList.SerializeAsString());
     } else {
-        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST);
+        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket.data->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST);
     }
 }
 

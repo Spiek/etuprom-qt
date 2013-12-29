@@ -15,9 +15,51 @@
 #include <QtCore/QMetaObject>
 #include <QtCore/QEventLoop>
 
-struct EleaphRPCDataPacket : DataPacket
+struct ElaphRpcPacketData : EleaphPacketData
 {
     QString strMethodName;
+
+    private:
+        QAtomicInt refCounter;
+
+    friend class EleaphRpcPacket;
+};
+
+class EleaphRpcPacket
+{
+    public:
+        EleaphRpcPacket()
+        {
+            this->data = 0;
+        }
+
+        EleaphRpcPacket(ElaphRpcPacketData *dataPacket)
+        {
+            dataPacket->refCounter.ref();
+            this->data = dataPacket;
+        }
+
+        EleaphRpcPacket(const EleaphRpcPacket &other)
+        {
+            other.data->refCounter.ref();
+            this->data = other.data;
+        }
+
+        EleaphRpcPacket& operator= (const EleaphRpcPacket &other)
+        {
+            other.data->refCounter.ref();
+            this->data = other.data;
+            return *this;
+        }
+
+        ~EleaphRpcPacket()
+        {
+            if (this->data && !this->data->refCounter.deref()) {
+                delete this->data;
+            }
+        }
+
+        ElaphRpcPacketData *data;
 };
 
 class EleaphProtoRPC : public IEleaph
@@ -54,11 +96,11 @@ class EleaphProtoRPC : public IEleaph
         void sendRPCDataPacket(QIODevice *device, QString strProcedureName, QByteArray data = QByteArray());
 
         // asyncron wait
-        EleaphRPCDataPacket* waitAsyncForPacket(QString strMethod);
+        EleaphRpcPacket waitAsyncForPacket(QString strMethod);
 
     protected:
         // interface implementation
-        virtual void newDataPacketReceived(DataPacket *dataPacket);
+        virtual void newDataPacketReceived(EleaphPacketData *dataPacket);
         virtual void deviceAdded(QIODevice* device);
         virtual void deviceRemoved(QIODevice* device);
 
@@ -80,14 +122,14 @@ class ElepahAsyncPacketWaiter : public QObject
         void packetReady();
 
     public:
-        EleaphRPCDataPacket *receivedDataPacket;
+        EleaphRpcPacket receivedDataPacket;
         ElepahAsyncPacketWaiter(EleaphProtoRPC* eleaphProto, QString strMethod)
         {
-            eleaphProto->registerRPCMethod(strMethod, this, SLOT(packetReceived(EleaphRPCDataPacket*)), true);
+            eleaphProto->registerRPCMethod(strMethod, this, SLOT(packetReceived(EleaphRpcPacket)), true);
         }
 
     public slots:
-        void packetReceived(EleaphRPCDataPacket *dataPacket)
+        void packetReceived(EleaphRpcPacket dataPacket)
         {
             this->receivedDataPacket = dataPacket;
             emit packetReady();

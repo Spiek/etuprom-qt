@@ -50,6 +50,7 @@ void MainWindow::setupLoggedInUser()
 void MainWindow::serverConnectionError(QAbstractSocket::SocketError socketError)
 {
     // if client disconnect from server, inform the user about and jump back to login form
+    Q_UNUSED(socketError);
     this->deleteLater();
     QString strErrorMessage = QString("Error \"%1\" occours, please relog...").arg(Global::socketServer->errorString());
     LoginForm *loginForm = new LoginForm(strErrorMessage);
@@ -70,10 +71,10 @@ void MainWindow::constructContactList()
     this->ui->treeWidgetContactList->expandAll();
 }
 
-void MainWindow::handleUserAltered(DataPacket *dataPacket)
+void MainWindow::handleUserAltered(EleaphRpcPacket dataPacket)
 {
     Protocol::User user;
-    user.ParseFromArray(dataPacket->baRawPacketData->data(), dataPacket->baRawPacketData->length());
+    user.ParseFromArray(dataPacket.data->baRawPacketData->data(), dataPacket.data->baRawPacketData->length());
     this->contactListUserAltered(user);
 }
 
@@ -158,6 +159,8 @@ void MainWindow::setupUser(Protocol::User *user, QString contactGroup)
 
 void MainWindow::onUserClicked(QTreeWidgetItem *widgetClicked, int column)
 {
+    Q_UNUSED(column);
+
     // get userid of clicked widget item
     qint32 userId = widgetClicked->data(0, Qt::UserRole).toInt();
 
