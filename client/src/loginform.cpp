@@ -24,8 +24,7 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     }
 
     // signal --> slot connections (Socket)
-    this->connect(Global::socketServer, SIGNAL(connected()), this, SLOT(serverConnectionSuccessfull()));
-    this->connect(Global::socketServer, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(serverConnectionError(QAbstractSocket::SocketError)));
+    this->connect(Global::socketServer, SIGNAL(disconnected()), this, SLOT(serverDisconnected()));
 
     // signal --> slot connections (Gui)
     this->connect(this->ui->lineEditLogin, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
@@ -63,23 +62,35 @@ void LoginForm::connectToServer()
     Global::socketServer->connectToHost(Global::strServerHostname, Global::intServerPort);
     this->ui->statusbar->showMessage("Try to connect to Server...");
     this->ui->centralwidget->setDisabled(true);
+
+    // make a syncron connect
+    QEventLoop loop;
+    loop.connect(Global::socketServer, SIGNAL(error(QAbstractSocket::SocketError)), &loop, SLOT(quit()));
+    loop.connect(Global::socketServer, SIGNAL(connected()), &loop, SLOT(quit()));
+    loop.exec();
+
+    // if socket is connected, we have a successfull connect
+    if(Global::socketServer->state() == QTcpSocket::ConnectedState) {
+        // inform the user about the successfull connection and enable the window, so that the user can login!
+        this->ui->statusbar->showMessage("Successfull connected to Server... Ready for login");
+        this->ui->centralwidget->setDisabled(false);
+    }
+
+    // ...otherwise we have an connection error, so inform user and try again
+    else {
+        // inform the user about the error and not allow the user to login
+        this->ui->centralwidget->setDisabled(true);
+        this->ui->statusbar->showMessage(QString("Error \"%1\" occours, try again in 10 Seconds...").arg(Global::socketServer->errorString()));
+
+        // try to establish the connection to the server after 10 seconds again
+        QTimer::singleShot(10000, this, SLOT(connectToServer()));
+    }
 }
 
-void LoginForm::serverConnectionSuccessfull()
+void LoginForm::serverDisconnected()
 {
-    // inform the user about the successfull connection and enable the window, so that the user can login!
-    this->ui->statusbar->showMessage("Successfull connected to Server... Ready for login");
-    this->ui->centralwidget->setDisabled(false);
-}
-
-void LoginForm::serverConnectionError(QAbstractSocket::SocketError socketError)
-{
-    // inform the user about the error and not allow the user to login
-    this->ui->centralwidget->setDisabled(true);
-    this->ui->statusbar->showMessage(QString("Error \"%1\" occours, try again in 10 Seconds...").arg(Global::socketServer->errorString()));
-
-    // try to establish the connection to the server after 3 seconds again
-    QTimer::singleShot(10000, this, SLOT(connectToServer()));
+    this->ui->statusbar->showMessage("Server disconnected, try reconnect again in 3 Seconds");
+    QTimer::singleShot(3000, this, SLOT(connectToServer()));
 }
 
 

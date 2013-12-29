@@ -46,9 +46,8 @@ class LoginForm : public QMainWindow
         void getNeededDataForMainForm();
 
         // Socket slots
-        void serverConnectionSuccessfull();
-        void serverConnectionError(QAbstractSocket::SocketError socketError);
         void connectToServer();
+        void serverDisconnected();
 };
 
 #endif // LOGINFORM_H
