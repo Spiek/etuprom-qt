@@ -106,7 +106,7 @@ void EleaphProtoRPC::sendRPCDataPacket(QIODevice *device, QString strProcedureNa
     intDataLength = qToBigEndian<qint16>(intDataLength);
 
     // prepend the content-length and method name to the data
-    data.prepend(strProcedureName.toAscii());
+    data.prepend(strProcedureName.toLatin1());
     data.prepend((char*)&intDataLength, sizeof(qint16));
 
     // send the RPC-Packet

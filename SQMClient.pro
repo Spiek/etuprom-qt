@@ -5,7 +5,7 @@
 #
 
 # Qt Settings
-QT       += core gui network webkit
+QT       += core gui network webkitwidgets
 
 # Compile Settings
 TARGET = SQMClient

@@ -8,7 +8,7 @@
 #define GLOBAL_H
 
 // Qt (core)
-#include <QtGui/QApplication>
+#include <QtWidgets/QApplication>
 #include <QtCore/QMap>
 #include <QtCore/QSettings>
 #include <QtCore/QVariant>

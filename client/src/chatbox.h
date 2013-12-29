@@ -7,14 +7,14 @@
 #ifndef CHATBOX_H
 #define CHATBOX_H
 
-#include <QMainWindow>
+#include <QtWidgets/QMainWindow>
 #include <QtCore/QMap>
 #include <QtCore/QSignalMapper>
 #include <QtCore/QDateTime>
 #include <QtCore/QFile>
 
 // gui
-#include <QWebFrame>
+#include <QtWebKitWidgets/QWebFrame>
 
 // own
 #include "designloader.h"

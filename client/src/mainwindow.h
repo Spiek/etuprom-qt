@@ -8,9 +8,9 @@
 #define MAINWINDOW_H
 
 // Qt (gui)
-#include <QtGui/QMainWindow>
+#include <QtWidgets/QMainWindow>
 #include <QtGui/QIcon>
-#include <QtGui/QTreeWidgetItem>
+#include <QtWidgets/QTreeWidgetItem>
 
 // own (client)
 #include "global.h"

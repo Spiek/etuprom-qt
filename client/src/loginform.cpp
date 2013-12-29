@@ -39,9 +39,9 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     this->connect(this->ui->pushButtonLogin, SIGNAL(clicked()), this, SLOT(login()));
 
     // signal --> slot connections (PacketProcessor)
-    Global::eleaphRpc->registerRPCMethod("login", this, SLOT(loginResponse(DataPacket*)));
-    Global::eleaphRpc->registerRPCMethod("user", this, SLOT(handleUserData(DataPacket*)));
-    Global::eleaphRpc->registerRPCMethod("contactlist", this, SLOT(handleUserContactList(DataPacket*)));
+    Global::eleaphRpc->registerRPCMethod("user.login", this, SLOT(loginResponse(DataPacket*)));
+    Global::eleaphRpc->registerRPCMethod("user.self.getinfo", this, SLOT(handleUserData(DataPacket*)));
+    Global::eleaphRpc->registerRPCMethod("contact.getlist", this, SLOT(handleUserContactList(DataPacket*)));
 
     // connect to server
     // Note: it could happen that the class was constructed in an event from the QTcpSocket (like the QTcpSocket::error() slot),
@@ -87,7 +87,7 @@ void LoginForm::login()
     requestLogin.set_password(baPasswordHash.data());
 
     // send protobuf packet container as Length-Prefix-packet over the stream
-    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "login", requestLogin.SerializeAsString());
+    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "user.login", requestLogin.SerializeAsString());
 }
 
 
@@ -136,7 +136,7 @@ void LoginForm::jumpToMainWindowIfPossible()
 }
 
 
-void LoginForm::loginResponse(DataPacket *dataPacket)
+void LoginForm::loginResponse(EleaphRPCDataPacket *dataPacket)
 {
     Protocol::LoginResponse responseLogin;
     responseLogin.ParseFromArray(dataPacket->baRawPacketData->data(), dataPacket->baRawPacketData->length());
@@ -154,7 +154,7 @@ void LoginForm::loginResponse(DataPacket *dataPacket)
     }
 }
 
-void LoginForm::handleUserData(DataPacket *dataPacket)
+void LoginForm::handleUserData(EleaphRPCDataPacket *dataPacket)
 {
     // simplefy user packet values
     Protocol::User *user = new Protocol::User;
@@ -169,7 +169,7 @@ void LoginForm::handleUserData(DataPacket *dataPacket)
     return this->jumpToMainWindowIfPossible();
 }
 
-void LoginForm::handleUserContactList(DataPacket *dataPacket)
+void LoginForm::handleUserContactList(EleaphRPCDataPacket *dataPacket)
 {
     // if no data was present, the contact list of the user is empty, exit!
     this->loginProcess = (LoginProcess)(this->loginProcess | LoginProcess_ContactListDataReceived);

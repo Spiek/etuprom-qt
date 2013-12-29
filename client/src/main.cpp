@@ -5,7 +5,7 @@
  */
 
 // Qt (core)
-#include <QtGui/QApplication>
+#include <QtWidgets/QApplication>
 
 // own (gui)
 #include "loginform.h"

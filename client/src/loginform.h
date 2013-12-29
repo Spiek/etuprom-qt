@@ -12,7 +12,7 @@
 #include <QtCore/QCryptographicHash>
 
 // Qt (gui)
-#include <QtGui/QMainWindow>
+#include <QtWidgets/QMainWindow>
 
 // own (protbuf)
 #include "protocol.pb.h"
@@ -51,9 +51,9 @@ class LoginForm : public QMainWindow
         void jumpToMainWindowIfPossible();
 
         // PacketProcessor
-        void loginResponse(DataPacket* dataPacket);
-        void handleUserData(DataPacket* dataPacket);
-        void handleUserContactList(DataPacket* dataPacket);
+        void loginResponse(EleaphRPCDataPacket *dataPacket);
+        void handleUserData(EleaphRPCDataPacket* dataPacket);
+        void handleUserContactList(EleaphRPCDataPacket* dataPacket);
 
         // Socket slots
         void serverConnectionSuccessfull();
