@@ -13,6 +13,7 @@
 // qt core libs
 #include <QtCore/QMultiMap>
 #include <QtCore/QMetaObject>
+#include <QtCore/QEventLoop>
 
 struct EleaphRPCDataPacket : DataPacket
 {
@@ -52,6 +53,9 @@ class EleaphProtoRPC : public IEleaph
         void sendRPCDataPacket(QIODevice *device, QString strProcedureName, char* data, int length);
         void sendRPCDataPacket(QIODevice *device, QString strProcedureName, QByteArray data = QByteArray());
 
+        // asyncron wait
+        EleaphRPCDataPacket* waitAsyncForPacket(QString strMethod);
+
     protected:
         // interface implementation
         virtual void newDataPacketReceived(DataPacket *dataPacket);
@@ -67,6 +71,28 @@ class EleaphProtoRPC : public IEleaph
 
         // helper methods
         QByteArray extractMethodName(const char* method);
+};
+
+class ElepahAsyncPacketWaiter : public QObject
+{
+    Q_OBJECT
+    signals:
+        void packetReady();
+
+    public:
+        EleaphRPCDataPacket *receivedDataPacket;
+        ElepahAsyncPacketWaiter(EleaphProtoRPC* eleaphProto, QString strMethod)
+        {
+            eleaphProto->registerRPCMethod(strMethod, this, SLOT(packetReceived(EleaphRPCDataPacket*)), true);
+        }
+
+    public slots:
+        void packetReceived(EleaphRPCDataPacket *dataPacket)
+        {
+            this->receivedDataPacket = dataPacket;
+            emit packetReady();
+        }
+
 };
 
 #endif // ELEAPHPROTORPC_H

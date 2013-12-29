@@ -27,7 +27,8 @@ SOURCES +=  client/src/main.cpp\
 # Headers (collective)
 HEADERS  += collective/src/eleaphprotorpc.h \
             collective/proto/src/protocol.pb.cc \
-            collective/src/ieleaph.h
+            collective/src/ieleaph.h \
+    		collective/proto/packettypes.h
 
 # Headers (client)
 HEADERS  += client/src/mainwindow.h  \

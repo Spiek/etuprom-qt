@@ -13,10 +13,6 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 {
     ui->setupUi(this);
 
-    // reset log in state
-    Global::boolLoggedIn = false;
-    this->loginProcess = LoginProcess_None;
-
     // if error message was set, set error message
     if(!strErrorMessage.isEmpty()) {
         this->ui->statusbar->showMessage(strErrorMessage);
@@ -34,14 +30,10 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     // signal --> slot connections (Gui)
     this->connect(this->ui->lineEditLogin, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
     this->connect(this->ui->lineEditPassword, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
+
     this->connect(this->ui->lineEditLogin, SIGNAL(returnPressed()), this, SLOT(login()));
     this->connect(this->ui->lineEditPassword, SIGNAL(returnPressed()), this, SLOT(login()));
     this->connect(this->ui->pushButtonLogin, SIGNAL(clicked()), this, SLOT(login()));
-
-    // signal --> slot connections (PacketProcessor)
-    Global::eleaphRpc->registerRPCMethod("user.login", this, SLOT(loginResponse(DataPacket*)));
-    Global::eleaphRpc->registerRPCMethod("user.self.getinfo", this, SLOT(handleUserData(DataPacket*)));
-    Global::eleaphRpc->registerRPCMethod("contact.getlist", this, SLOT(handleUserContactList(DataPacket*)));
 
     // connect to server
     // Note: it could happen that the class was constructed in an event from the QTcpSocket (like the QTcpSocket::error() slot),
@@ -56,40 +48,9 @@ LoginForm::~LoginForm()
 }
 
 
-bool LoginForm::loginValidator()
-{
-    // enable the login button if username and password was typed in
-    if(this->ui->lineEditLogin->text().isEmpty() || this->ui->lineEditPassword->text().isEmpty()) {
-        this->ui->pushButtonLogin->setEnabled(false);
-        return false;
-    }
-
-    // otherwise disable the login button
-    else {
-        this->ui->pushButtonLogin->setEnabled(true);
-        return true;
-    }
-}
-
-void LoginForm::login()
-{
-    // disbale the login button, so that the user can't login twice
-    this->ui->pushButtonLogin->setEnabled(false);
-
-    // inform the user about the login process
-    this->ui->statusbar->showMessage("Login...");
-
-    // create login protobuf objects and send it to the server
-    // create packet LoginRequest
-    Protocol::LoginRequest requestLogin;
-    requestLogin.set_username(this->ui->lineEditLogin->text().toStdString());
-    QByteArray baPasswordHash = QCryptographicHash::hash(this->ui->lineEditPassword->text().toUtf8(), QCryptographicHash::Sha1).toHex();
-    requestLogin.set_password(baPasswordHash.data());
-
-    // send protobuf packet container as Length-Prefix-packet over the stream
-    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "user.login", requestLogin.SerializeAsString());
-}
-
+//
+// Server Connection Signal handling
+//
 
 void LoginForm::connectToServer()
 {
@@ -103,7 +64,6 @@ void LoginForm::connectToServer()
     this->ui->statusbar->showMessage("Try to connect to Server...");
     this->ui->centralwidget->setDisabled(true);
 }
-
 
 void LoginForm::serverConnectionSuccessfull()
 {
@@ -122,24 +82,47 @@ void LoginForm::serverConnectionError(QAbstractSocket::SocketError socketError)
     QTimer::singleShot(10000, this, SLOT(connectToServer()));
 }
 
-void LoginForm::jumpToMainWindowIfPossible()
+
+//
+// Login
+//
+
+bool LoginForm::loginValidator()
 {
-    // if not all needed data is received, exit here
-    if(this->loginProcess != LoginProcess_Done) {
-        return;
+    // disable the login button if username or password was not typed in
+    if(this->ui->lineEditLogin->text().isEmpty() || this->ui->lineEditPassword->text().isEmpty()) {
+        this->ui->pushButtonLogin->setEnabled(false);
+        return false;
     }
 
-    // create main window and delete Login Form
-    this->deleteLater();
-    MainWindow *mainWindow = new MainWindow;
-    mainWindow->show();
+    // if username and pw was typed in, enable login button
+    this->ui->pushButtonLogin->setEnabled(true);
+    return true;
 }
 
-
-void LoginForm::loginResponse(EleaphRPCDataPacket *dataPacket)
+void LoginForm::login()
 {
+    // disbale the login button, so that the user can't perform a login twice
+    this->ui->pushButtonLogin->setEnabled(false);
+
+    // inform the user about the login process
+    this->ui->statusbar->showMessage("Login...");
+
+    // create login protobuf objects
+    Protocol::LoginRequest requestLogin;
+    requestLogin.set_username(this->ui->lineEditLogin->text().toStdString());
+    QByteArray baPasswordHash = QCryptographicHash::hash(this->ui->lineEditPassword->text().toUtf8(), QCryptographicHash::Sha1).toHex();
+    requestLogin.set_password(baPasswordHash.data());
+
+    // ... and send constructed protobuf packet to the server
+    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_USER_LOGIN, requestLogin.SerializeAsString());
+
+    // wait for packet async and process it
+    EleaphRPCDataPacket *epLoginResponse = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_USER_LOGIN);
+
+    // parse server response and handle it
     Protocol::LoginResponse responseLogin;
-    responseLogin.ParseFromArray(dataPacket->baRawPacketData->data(), dataPacket->baRawPacketData->length());
+    responseLogin.ParseFromArray(epLoginResponse->baRawPacketData->data(), epLoginResponse->baRawPacketData->length());
 
     // inform the user about login wasn't success, reset the password, and let the user login again :-)
     if(responseLogin.type() == Protocol::LoginResponse_Type_LoginIncorect) {
@@ -147,50 +130,63 @@ void LoginForm::loginResponse(EleaphRPCDataPacket *dataPacket)
         this->ui->centralwidget->setDisabled(false);
     }
 
-    // login was success, close login form and jump to MainWindow
+    // login was success, get now all needed extra informations for main form
     else {
-        Global::boolLoggedIn = true;
-        this->ui->statusbar->showMessage("Login success, wait for client data...");
+        this->ui->statusbar->showMessage("Login Success...");
+        return getNeededDataForMainForm();
     }
 }
 
-void LoginForm::handleUserData(EleaphRPCDataPacket *dataPacket)
+void LoginForm::getNeededDataForMainForm()
 {
-    // simplefy user packet values
+    ///
+    /// get own user data
+    ///
+    // request own user data from server
+    this->ui->statusbar->showMessage("Get Userdata...");
+    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_USER_SELF_GET_INFO);
+    EleaphRPCDataPacket *epUserSelf = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_USER_SELF_GET_INFO);
+
+   // parse and handle own user data
     Protocol::User *user = new Protocol::User;
-    if(!user->ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
+    if(!user->ParseFromArray(epUserSelf->baRawPacketData->constData(), epUserSelf->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
         return;
     }
-    this->loginProcess = (LoginProcess)(this->loginProcess | LoginProcess_UserDataReceived);
+
+    // save user
     Global::user = user;
 
-    // if all login data was received jump to main window
-    return this->jumpToMainWindowIfPossible();
-}
 
-void LoginForm::handleUserContactList(EleaphRPCDataPacket *dataPacket)
-{
-    // if no data was present, the contact list of the user is empty, exit!
-    this->loginProcess = (LoginProcess)(this->loginProcess | LoginProcess_ContactListDataReceived);
-    if(dataPacket->baRawPacketData->isEmpty()) {
-        return this->jumpToMainWindowIfPossible();
+    ///
+    /// get contact list
+    ///
+    // request contact list from server
+    this->ui->statusbar->showMessage("Get Contactlist...");
+    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_CONTACT_GET_LIST);
+    EleaphRPCDataPacket *epContactList = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_CONTACT_GET_LIST);
+
+    // if no contact list was given skip contact list handling
+    Global::mapContactList.clear();
+    if(epContactList->baRawPacketData->length() > 0)  {
+        // parse and handle contact list
+        Protocol::ContactList contactList;
+        if(!contactList.ParseFromArray(epContactList->baRawPacketData->constData(), epContactList->baRawPacketData->length())) {
+            qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
+            return;
+        }
+
+        // save all contacts for global access
+
+        for(int i = 0; i < contactList.contact_size(); i++) {
+            Protocol::Contact* contact = new Protocol::Contact(contactList.contact(i));
+            Global::mapContactList.insert(contact->user().id(), contact);
+            Global::mapCachedUsers.insert(contact->user().id(), contact->mutable_user());
+        }
     }
 
-    // simplefy user packet values
-    Protocol::ContactList contactList;
-    if(!contactList.ParseFromArray(dataPacket->baRawPacketData->constData(), dataPacket->baRawPacketData->length())) {
-        qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
-        return;
-    }
-
-    // save all contacts for global access
-    for(int i = 0; i < contactList.contact_size(); i++) {
-        Protocol::Contact* contact = new Protocol::Contact(contactList.contact(i));
-        Global::mapContactList.insert(contact->user().id(), contact);
-        Global::mapCachedUsers.insert(contact->user().id(), contact->mutable_user());
-    }
-
-    // if all login data was received jump to main window
-    return this->jumpToMainWindowIfPossible();
+    // jump to main form (and destroy login form!)
+    this->deleteLater();
+    MainWindow *mw = new MainWindow;
+    mw->show();
 }

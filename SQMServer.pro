@@ -38,7 +38,8 @@ HEADERS +=  \
             collective/src/ieleaph.h \
             server/src/querybuilder.h \
             server/src/chatmanager.h \
-            server/src/contactmanager.h
+            server/src/contactmanager.h \
+    		collective/proto/packettypes.h
 
 # include path
 INCLUDEPATH += "include/"

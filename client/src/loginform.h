@@ -16,6 +16,7 @@
 
 // own (protbuf)
 #include "protocol.pb.h"
+#include "collective/proto/packettypes.h"
 
 // own (client)
 #include "global.h"
@@ -36,30 +37,18 @@ class LoginForm : public QMainWindow
         ~LoginForm();
 
     private:
-        enum LoginProcess {
-            LoginProcess_None = 0,
-            LoginProcess_UserDataReceived = 1 << 0,
-            LoginProcess_ContactListDataReceived = 1 << 1,
-            LoginProcess_Done = 3
-        } loginProcess;
         Ui::LoginForm *ui;
 
     private slots:
         // Gui
         bool loginValidator();
         void login();
-        void jumpToMainWindowIfPossible();
-
-        // PacketProcessor
-        void loginResponse(EleaphRPCDataPacket *dataPacket);
-        void handleUserData(EleaphRPCDataPacket* dataPacket);
-        void handleUserContactList(EleaphRPCDataPacket* dataPacket);
+        void getNeededDataForMainForm();
 
         // Socket slots
         void serverConnectionSuccessfull();
         void serverConnectionError(QAbstractSocket::SocketError socketError);
         void connectToServer();
-
 };
 
 #endif // LOGINFORM_H
