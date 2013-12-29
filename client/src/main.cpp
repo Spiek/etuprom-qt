@@ -22,8 +22,8 @@ int main(int argc, char *argv[])
     Global::initialize();
 
     // init login form
-    LoginForm formLogin;
-    formLogin.show();
+    LoginForm *formLogin = new LoginForm;
+    formLogin->show();
 
     // start eventloop
     return a.exec();
