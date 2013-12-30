@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->connect(Global::socketServer, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(serverConnectionError(QAbstractSocket::SocketError)));
 
     // signal --> slot connections (PacketProcessor)
-    Global::eleaphRpc->registerRPCMethod("user_altered", this, SLOT(handleUserAltered(DataPacket*)));
+    Global::eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_ALTERED, this, SLOT(handleUserAltered(DataPacket*)));
 
     // handle double click event of new user
     this->connect(this->ui->treeWidgetContactList, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onUserClicked(QTreeWidgetItem*,int)));
@@ -82,7 +82,6 @@ void MainWindow::handleLogout()
 {
     // cleanup all variable global data
     qDeleteAll(Global::mapContactList.values());
-    qDeleteAll(Global::mapCachedUsers.values());
     Global::mapContactList.clear();
     Global::mapCachedUsers.clear();
 
