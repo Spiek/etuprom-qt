@@ -5,4 +5,7 @@ CREATE TABLE IF NOT EXISTS `userlist` (
   `group` varchar(100) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_contact` (`user_id`,`user_id_onlist`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1;
+
+INSERT INTO `userlist` (`id`, `user_id`, `user_id_onlist`, `group`) VALUES
+(1, 1, 1, 'test');
