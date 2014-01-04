@@ -71,7 +71,7 @@ void MainWindow::onContactClicked(QTreeWidgetItem *widgetClicked, int column)
     Protocol::User *user = this->mapIdUser.value(userId);
 
     // add user to chatBox and show the chatBox
-    this->chatBox->addNewUser(user);
+    this->chatBox->showUserChatBox(user);
 }
 
 

@@ -23,6 +23,7 @@
 
 // own (protbuf)
 #include "protocol.pb.h"
+#include "collective/proto/packettypes.h"
 
 namespace Ui {
     class ChatBox;
@@ -31,39 +32,36 @@ namespace Ui {
 class ChatBox : public QMainWindow
 {
     Q_OBJECT
-
-    signals:
-        void newMessage(qint32 userIdReceiver, QString strMessage);
-
     public:
         ChatBox(QWidget *parent = 0);
         ~ChatBox();
 
-
     public slots:
-        // extern slot class accessors
-        void addNewUser(Protocol::User *user);
-        void loadDesign(QString strDesign);
+        // Extern class accessor slots
+        void showUserChatBox(Protocol::User *user);
         void addMessage(QString text, Protocol::User* user, bool direction, quint32 timeStamp);
+        void loadDesign(QString strDesign);
 
     private slots:
+        // Gui slots
         void chatTextChanged(int userId);
 
-        // protocol handlers
-        void handleTextMessage(EleaphRpcPacket dataPacket);
+        // Protocol handlers
+        void handleInboundTextMessage(EleaphRpcPacket dataPacket);
 
     protected:
+        // Overriden Parent functions
         void closeEvent(QCloseEvent *closeEvent);
 
     private:
+        // design components
         DesignLoader::ChatDesign designChat;
 
+        // tab mapping
         QMap<qint32, qint32> mapUserIdTabIndex;
         QMap<qint32, Ui_FormChatWidget*> mapUserIdChatForm;
         Ui::ChatBox *ui;
         QSignalMapper *sigMapperUserMessages;
-
-        // design components
         QMap<qint32, bool*> mapUserLastMessage;
 };
 

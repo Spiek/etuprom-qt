@@ -18,39 +18,28 @@ ChatBox::ChatBox(QWidget *parent) :
     this->connect(this->sigMapperUserMessages, SIGNAL(mapped(int)), this, SLOT(chatTextChanged(int)));
 
     // protocol handlings
-    EleaphProtoRPC *eleaphRpc = Global::eleaphRpc;
-    eleaphRpc->registerRPCMethod("message.private", this, SLOT(handleTextMessage(DataPacket*)));
+    Global::eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CHAT_PRIVATE, this, SLOT(handleInboundTextMessage(DataPacket*)));
 }
 
 ChatBox::~ChatBox()
 {
     delete ui;
+    delete this->sigMapperUserMessages;
 }
 
-void ChatBox::closeEvent(QCloseEvent *closeEvent)
-{
-    closeEvent->ignore();
-    this->hide();
-}
 
-void ChatBox::loadDesign(QString strDesign)
-{
-    this->designChat = DesignLoader::loadChatDesign(strDesign);
+//
+// Extern class accessor slots
+//
 
-    // install design
-    foreach(Ui_FormChatWidget* chatFormUser, this->mapUserIdChatForm.values()) {
-        chatFormUser->webView->settings()->setUserStyleSheetUrl(this->designChat.urlPathToMainCss);
-    }
-}
-
-void ChatBox::addNewUser(Protocol::User *user)
+void ChatBox::showUserChatBox(Protocol::User *user)
 {
     // if tab for user not exist, create it
     int intTabIndex = 0;
     if(!this->mapUserIdTabIndex.contains(user->id())) {
         // create new chatTab widget, by using created chatTab.ui
         QWidget* newTab = new QWidget(this);
-        Ui_FormChatWidget *chatForm = new Ui_FormChatWidget;        
+        Ui_FormChatWidget *chatForm = new Ui_FormChatWidget;
         chatForm->setupUi(newTab);
 
         // set style sheets
@@ -71,47 +60,12 @@ void ChatBox::addNewUser(Protocol::User *user)
     this->show();
 }
 
-void ChatBox::chatTextChanged(int userId)
-{
-    // get chatWidget for user
-    Ui_FormChatWidget *chatForm = this->mapUserIdChatForm.value(userId);
-
-    // if user has pressed the enter button, communicate message to outside
-    QString strMessage = chatForm->plainTextEditText->toPlainText();
-    if(strMessage.right(1) == "\n") {
-        strMessage.remove(strMessage.length() - 1, 1);
-
-        // send message to server
-        Protocol::MessagePrivateClient message;
-        message.set_useridreceiver(userId);
-        message.set_text(strMessage.toStdString());
-        Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "message.private", message.SerializeAsString());
-
-        // add message
-        this->addMessage(strMessage, Global::mapCachedUsers.value(userId), false, QDateTime::currentDateTime().toTime_t());
-
-        // clear message
-        chatForm->plainTextEditText->clear();
-    }
-}
-
-void ChatBox::handleTextMessage(EleaphRpcPacket dataPacket)
-{
-    // parse protocol
-    Protocol::MessagePrivateServer message;
-    if(!message.ParseFromArray(dataPacket.data->baRawPacketData->constData(), dataPacket.data->baRawPacketData->length())) {
-        qWarning("[%s][%d] - Protocol Violation by Trying to Parse MessagePrivateServer", __PRETTY_FUNCTION__ , __LINE__);
-        return;
-    }
-
-    // add message
-    return this->addMessage(QString::fromStdString(message.text()), message.mutable_usersender(), true, message.timestamp());
-}
-
-// true -> Inbound
-// false -> Outbound
 void ChatBox::addMessage(QString text, Protocol::User* user, bool direction, quint32 timeStamp)
 {
+    // direction:
+    // true --> Inbound
+    // false --> Outbound
+
     // if we have a message, and the chat window for the sending user doesn't exist, create it
     if(!this->mapUserIdChatForm.contains(user->id())) {
         // if user doen't exist in cached list, add user to cached list
@@ -120,7 +74,7 @@ void ChatBox::addMessage(QString text, Protocol::User* user, bool direction, qui
         }
 
         // add new user first
-        this->addNewUser(user);
+        this->showUserChatBox(user);
     }
 
     // get last message direction
@@ -166,4 +120,72 @@ void ChatBox::addMessage(QString text, Protocol::User* user, bool direction, qui
 
     // show the form
     this->show();
+}
+
+void ChatBox::loadDesign(QString strDesign)
+{
+    this->designChat = DesignLoader::loadChatDesign(strDesign);
+
+    // install design
+    foreach(Ui_FormChatWidget* chatFormUser, this->mapUserIdChatForm.values()) {
+        chatFormUser->webView->settings()->setUserStyleSheetUrl(this->designChat.urlPathToMainCss);
+    }
+}
+
+
+//
+// Gui slots
+//
+
+void ChatBox::chatTextChanged(int userId)
+{
+    // get chatWidget for user
+    Ui_FormChatWidget *chatForm = this->mapUserIdChatForm.value(userId);
+
+    // if user has pressed the enter button, communicate message to outside
+    QString strMessage = chatForm->plainTextEditText->toPlainText();
+    if(strMessage.right(1) == "\n") {
+        strMessage.remove(strMessage.length() - 1, 1);
+
+        // send message to server
+        Protocol::MessagePrivateClient message;
+        message.set_useridreceiver(userId);
+        message.set_text(strMessage.toStdString());
+        Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_CHAT_PRIVATE, message.SerializeAsString());
+
+        // add message
+        this->addMessage(strMessage, Global::mapCachedUsers.value(userId), false, QDateTime::currentDateTime().toTime_t());
+
+        // clear message
+        chatForm->plainTextEditText->clear();
+    }
+}
+
+
+//
+// Protocol handlers
+//
+
+void ChatBox::handleInboundTextMessage(EleaphRpcPacket dataPacket)
+{
+    // parse protocol
+    Protocol::MessagePrivateServer message;
+    if(!message.ParseFromArray(dataPacket.data->baRawPacketData->constData(), dataPacket.data->baRawPacketData->length())) {
+        qWarning("[%s][%d] - Protocol Violation by Trying to Parse MessagePrivateServer", __PRETTY_FUNCTION__ , __LINE__);
+        return;
+    }
+
+    // add message
+    return this->addMessage(QString::fromStdString(message.text()), message.mutable_usersender(), true, message.timestamp());
+}
+
+
+//
+// Overriden Parent functions
+//
+void ChatBox::closeEvent(QCloseEvent *closeEvent)
+{
+    // it's not possible to really close the form
+    closeEvent->ignore();
+    this->hide();
 }
