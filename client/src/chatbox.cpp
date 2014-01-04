@@ -43,7 +43,7 @@ void ChatBox::showUserChatBox(Protocol::User *user)
         chatForm->setupUi(newTab);
 
         // set style sheets
-        chatForm->webView->settings()->setUserStyleSheetUrl(this->designChat.urlPathToMainCss);
+        chatForm->webView->setHtml(this->designChat.strMainHtml, this->designChat.urlDesigndir);
 
         // handle text changing event from users textedit
         this->connect(chatForm->plainTextEditText, SIGNAL(textChanged()), this->sigMapperUserMessages, SLOT(map()));
@@ -92,22 +92,24 @@ void ChatBox::addMessage(QString text, Protocol::User* user, bool direction, qui
 
     // create outbound html code, if we have a outbound message (Logged in User --> Remote User)
     if(!direction) {
-        strNewTextMessage = *boolLastMessageDirection ? this->designChat.strContentOfOutBoundNextContent : this->designChat.strContentOfOutBoundContent;
+        strNewTextMessage = *boolLastMessageDirection ? this->designChat.strOutgoingNext : this->designChat.strOutgoingFirst;
     }
 
     // otherwise create inbound html code, if we have a inbound message (Remote User --> Logged in User)
     else {
-        strNewTextMessage = !*boolLastMessageDirection ? this->designChat.strContentOfInBoundNextContent : this->designChat.strContentOfInBoundContent;
+        strNewTextMessage = !*boolLastMessageDirection ? this->designChat.strIncomingNext : this->designChat.strIncomingFirst;
     }
 
     // replace values
-    strNewTextMessage = strNewTextMessage.replace("%sender%", QString::fromStdString(direction ? user->username() : Global::user->username()));
-    strNewTextMessage = strNewTextMessage.replace("%time{%H:%M}%", QDateTime::fromTime_t(timeStamp).toString("hh:mm"));
-    strNewTextMessage = strNewTextMessage.replace("%message%", text);
+    strNewTextMessage = strNewTextMessage.replace("<!-- %%sender%% -->", QString::fromStdString(direction ? user->username() : Global::user->username()));
+    strNewTextMessage = strNewTextMessage.replace("<!-- %%time{%H:%M:%S}%% -->", QDateTime::fromTime_t(timeStamp).toString("hh:mm:ss"));
+    strNewTextMessage = strNewTextMessage.replace("<!-- %%message%% -->", text);
 
     // update html code, and scrollbar
     QString strHtml = chatWidget->webView->page()->mainFrame()->toHtml();
-    chatWidget->webView->page()->mainFrame()->setHtml(strHtml + strNewTextMessage);
+    strHtml = strHtml.replace("<!-- %%chatcontent %% -->", strNewTextMessage + "<!-- %%chatcontent %% -->");
+
+    chatWidget->webView->setHtml(strHtml, this->designChat.urlDesigndir);
     chatWidget->webView->page()->mainFrame()->setScrollBarValue(Qt::Vertical, chatWidget->webView->page()->mainFrame()->scrollBarMaximum(Qt::Vertical));
 
     // get last message direction
@@ -128,7 +130,7 @@ void ChatBox::loadDesign(QString strDesign)
 
     // install design
     foreach(Ui_FormChatWidget* chatFormUser, this->mapUserIdChatForm.values()) {
-        chatFormUser->webView->settings()->setUserStyleSheetUrl(this->designChat.urlPathToMainCss);
+        chatFormUser->webView->setHtml(this->designChat.strMainHtml, this->designChat.urlDesigndir);
     }
 }
 

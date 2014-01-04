@@ -2,53 +2,38 @@
 
 DesignLoader::ChatDesign DesignLoader::loadChatDesign(QString strDesign)
 {
-    // some global path pars
-    QString strDesignPath = QString("design/%1/Contents/Resources/").arg(strDesign);
+    // create some global path pars
+    QString strDesignPath = QString("design/%1/ChatBox/").arg(strDesign);
     DesignLoader::ChatDesign design;
+    design.urlDesigndir = QUrl::fromLocalFile(QFileInfo(strDesignPath).absoluteFilePath());
 
-    // Global (css etc.)
-    design.urlPathToMainCss = QUrl::fromLocalFile(strDesignPath + "main.css");
+    // load "global" design configuration
+    design.strMainHtml = DesignLoader::readFileContent(QString("%1/main.html").arg(strDesignPath));
 
-    QFile fileContentOfFooter(strDesignPath + "Footer.html");
-    fileContentOfFooter.open(QFile::ReadOnly);
-    design.strContentOfFooter = fileContentOfFooter.readAll();
+    // load "incoming" design configuration (if incoming_first.html doesn't exist, take incoming_next.html as incoming first!)
+    if(QFile::exists(QString("%1/incoming_first.html").arg(strDesignPath))) {
+        design.strIncomingFirst = DesignLoader::readFileContent(QString("%1/incoming_first.html").arg(strDesignPath));
+    } else {
+        design.strIncomingFirst = DesignLoader::readFileContent(QString("%1/incoming_next.html").arg(strDesignPath));
+    }
+    design.strIncomingNext = DesignLoader::readFileContent(QString("%1/incoming_next.html").arg(strDesignPath));
 
-    QFile fileContentOfHeader(strDesignPath + "Header.html");
-    fileContentOfHeader.open(QFile::ReadOnly);
-    design.strContentOfHeader = fileContentOfHeader.readAll();
-
-    QFile fileContentOfStatus(strDesignPath + "Status.html");
-    fileContentOfStatus.open(QFile::ReadOnly);
-    design.strContentOfStatus = fileContentOfStatus.readAll();
-
-
-    // Incoming html
-    QFile fileContentOfInBoundAction(strDesignPath + "Incoming/Action.html");
-    fileContentOfInBoundAction.open(QFile::ReadOnly);
-    design.strContentOfInBoundAction = fileContentOfInBoundAction.readAll();
-
-    QFile fileContentOfInBoundContent(strDesignPath + "Incoming/Content.html");
-    fileContentOfInBoundContent.open(QFile::ReadOnly);
-    design.strContentOfInBoundContent = fileContentOfInBoundContent.readAll();
-
-    QFile fileContentOfInBoundNextContent(strDesignPath + "Incoming/NextContent.html");
-    fileContentOfInBoundNextContent.open(QFile::ReadOnly);
-    design.strContentOfInBoundNextContent = fileContentOfInBoundNextContent.readAll();
-
-
-    // Outgoing html
-    QFile fileContentOfOutBoundAction(strDesignPath + "Outgoing/Action.html");
-    fileContentOfOutBoundAction.open(QFile::ReadOnly);
-    design.strContentOfOutBoundAction = fileContentOfOutBoundAction.readAll();
-
-    QFile fileContentOfOutBoundContent(strDesignPath + "Outgoing/Content.html");
-    fileContentOfOutBoundContent.open(QFile::ReadOnly);
-    design.strContentOfOutBoundContent = fileContentOfOutBoundContent.readAll();
-
-    QFile fileContentOfOutBoundNextContent(strDesignPath + "Outgoing/NextContent.html");
-    fileContentOfOutBoundNextContent.open(QFile::ReadOnly);
-    design.strContentOfOutBoundNextContent = fileContentOfOutBoundNextContent.readAll();
+    // load "outgoing" design configuration (if outgoing_first.html doesn't exist, take outgoing_next.html as outgoing first!)
+    if(QFile::exists(QString("%1/outgoing_first.html").arg(strDesignPath))) {
+        design.strOutgoingFirst = DesignLoader::readFileContent(QString("%1/outgoing_first.html").arg(strDesignPath));
+    } else {
+        design.strOutgoingFirst = DesignLoader::readFileContent(QString("%1/outgoing_next.html").arg(strDesignPath));
+    }
+    design.strOutgoingNext = DesignLoader::readFileContent(QString("%1/outgoing_next.html").arg(strDesignPath));
 
     // return fully constructed design
     return design;
+}
+
+
+QString DesignLoader::readFileContent(QString strFile)
+{
+    QFile file(strFile);
+    file.open(QFile::ReadOnly);
+    return file.readAll();
 }

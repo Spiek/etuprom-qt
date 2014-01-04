@@ -5,31 +5,30 @@
 #include <QUrl>
 #include <QString>
 #include <QFile>
+#include <QFileInfo>
+
 
 class DesignLoader
 {
     public:
         struct ChatDesign {
             // Global
-            QUrl urlPathToMainCss;
-
-            // Global html
-            QString strContentOfFooter;
-            QString strContentOfHeader;
-            QString strContentOfStatus;
+            QUrl urlDesigndir;
+            QString strMainHtml;
 
             // Incoming html
-            QString strContentOfInBoundAction;
-            QString strContentOfInBoundContent;
-            QString strContentOfInBoundNextContent;
+            QString strIncomingFirst;
+            QString strIncomingNext;
 
-            // Outgoing html
-            QString strContentOfOutBoundAction;
-            QString strContentOfOutBoundContent;
-            QString strContentOfOutBoundNextContent;
+            // Incoming html
+            QString strOutgoingFirst;
+            QString strOutgoingNext;
         };
 
         static DesignLoader::ChatDesign loadChatDesign(QString strDesign);
+
+    private:
+        static QString readFileContent(QString strFile);
 };
 
 #endif // CHATDESIGNLOADER_H

@@ -24,6 +24,9 @@ MainWindow::MainWindow(QWidget *parent) :
     this->connect(this->ui->treeWidgetContactList, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onContactClicked(QTreeWidgetItem*,int)));
     this->connect(this->ui->actionLogout, SIGNAL(triggered()), this, SLOT(handleLogout()));
     this->connect(this->ui->actionExit, SIGNAL(triggered()), this, SLOT(deleteLater()));
+	
+	// load default chatbox design
+    this->chatBox->loadDesign("default");
 
     // setup all sub modules
     this->setupLoggedInUser();
