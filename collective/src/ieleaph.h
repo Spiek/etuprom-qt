@@ -47,15 +47,39 @@ struct EleaphPacketData
 
         // if we inherit from this class,
         // we want to move the data from the old object to the new
-        void moveFrom(EleaphPacketData *dataPacket)
+        EleaphPacketData* move(EleaphPacketData *moveTo, bool deleteMySelf = false)
         {
-            this->ioPacketDevice = dataPacket->ioPacketDevice;
-            this->baRawPacketData = dataPacket->baRawPacketData;
-            this->intPacktLength = dataPacket->intPacktLength;
+            moveTo->ioPacketDevice = this->ioPacketDevice;
+            moveTo->baRawPacketData = this->baRawPacketData;
+            moveTo->intPacktLength = this->intPacktLength;
+
+            // reset all values to default
+            this->resetToDefault();
+
+            // if user want to delete this object, so do it
+            if(deleteMySelf) {
+                delete this;
+            }
+
+            // return the object where all data where moved to
+            return moveTo;
+        }
+
+        void resetToDefault()
+        {
+            this->ioPacketDevice = 0;
+            this->baRawPacketData = 0;
+            this->intPacktLength = 0;
         }
 
         ~EleaphPacketData()
         {
+            // exit if there is nothing to delete
+            if(!this->baRawPacketData) {
+                return;
+            }
+
+            // delete all content
             delete baRawPacketData;
         }
 };
