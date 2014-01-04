@@ -37,27 +37,23 @@ class MainWindow : public QMainWindow
         QMap<qint32, QTreeWidgetItem*> mapUserItems;
         QMap<QString, QTreeWidgetItem*> mapGroups;
 
-        // helper functions
-        void requestUserInformations();
-        void setupUser(Protocol::User *user, QString contactGroup = "");
-
         // designer members
         ChatBox* chatBox;
 
-    private slots:
-        // Socket slots
-        void serverConnectionError(QAbstractSocket::SocketError socketError);
-        void contactListUserAltered(Protocol::User user);
-
-        // GUI slots
-        void onUserClicked(QTreeWidgetItem* widgetClicked, int column);
-        void constructContactList();
+        // Helper functions
+        void setupContactList();
+        void setupUser(Protocol::User *user, QString contactGroup = "");
         void setupLoggedInUser();
 
-        // Protocol slots (server --> client)
-        void handleUserAltered(EleaphRpcPacket dataPacket);
+    private slots:
+        // Socket slots
+        void serverConnectionError();
 
-        // Protocol slots (client --> server)
+        // GUI slots
+        void onContactClicked(QTreeWidgetItem* widgetClicked, int column);
+
+        // Protocol slots
+        void handleUserAltered(EleaphRpcPacket dataPacket);
         void handleLogout();
 };
 
