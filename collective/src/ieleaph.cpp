@@ -232,8 +232,8 @@ void IEleaph::sendDataPacket(QIODevice *device, QByteArray *baDatatoSend)
 //
 // Empty Virtual Events
 //
-void IEleaph::deviceAdded(QIODevice* device) { }
+void IEleaph::deviceAdded(QIODevice* device) { Q_UNUSED(device); }
 
-void IEleaph::deviceRemoved(QIODevice* device) { }
+void IEleaph::deviceRemoved(QIODevice* device) { Q_UNUSED(device); }
 
-void IEleaph::packetDownloadProcess(QIODevice *device, qint64 downloadedBytes, qint64 totalBytes) { }
+void IEleaph::packetDownloadProcess(QIODevice *device, qint64 downloadedBytes, qint64 totalBytes) { Q_UNUSED(device); Q_UNUSED(downloadedBytes); Q_UNUSED(totalBytes); }

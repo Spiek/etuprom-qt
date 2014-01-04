@@ -16,6 +16,6 @@
 #define PACKET_DESCRIPTOR_CONTACT_ALTERED "contact.altered"
 
 // Chatmanager Module
-#define PACKET_DESCRIPTOR_CHAT_PRIVATE "chat.private"
+#define PACKET_DESCRIPTOR_CHAT_PRIVATE "message.private"
 
 #endif // PACKETTYPES_H
