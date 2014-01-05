@@ -3,7 +3,7 @@
  * To view a copy of this license, visit http://creativecommons.org/licenses/by/3.0/
  * or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
  */
- 
+
 #include "usermanager.h"
 
 Usermanager::Usermanager(PacketProcessor *packetProcessor, QObject *parent) : QObject(parent)
@@ -21,14 +21,11 @@ Usermanager::Usermanager(PacketProcessor *packetProcessor, QObject *parent) : QO
 
 Usermanager::~Usermanager()
 {
-
+    qDeleteAll(mapSocketUser);
 }
 
 
-
-
 //
-// Section:
 //  Protocol helper methods
 //
 
@@ -56,7 +53,6 @@ void Usermanager::userChanged(QIODevice *device, bool refreshUser)
 
 
 //
-// Section:
 //  User managment helper methods
 //
 
@@ -178,12 +174,9 @@ void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
     // construct Default User (which will contain the matched user, if found)
     Protocol::User *user = new Protocol::User;
 
-    // simplefy object access
-    DatabaseHelper *databaseHelper = Global::getDatabaseHelper();
-
     // inform the client if the user was found, or not
     Protocol::LoginResponse response;
-    if(!databaseHelper->getUserByIdUserNameAndPw(strUsername, strPassword, user)) {
+    if(!Global::getDatabaseHelper()->getUserByIdUserNameAndPw(strUsername, strPassword, user)) {
         response.set_type(Protocol::LoginResponse_Type_LoginIncorect);
     } else {
         response.set_type(Protocol::LoginResponse_Type_Success);
