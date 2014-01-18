@@ -10,18 +10,23 @@
 #include <QObject>
 
 // own libs
-#include "packetprocessor.h"
+#include "collective/proto/packettypes.h"
+#include "EleaphProtoRpc"
 #include "protocol.pb.h"
 #include "global.h"
+
+// sub module dependings
+#include "usermanager.h"
 
 class Chatmanager : public QObject
 {
     Q_OBJECT
     public:
-        Chatmanager(PacketProcessor* packetProcessor, QObject *parent = 0);
+        Chatmanager(EleaphProtoRPC *eleaphRpc, Usermanager* managerUser, QObject *parent = 0);
 
     private:
-        PacketProcessor *packetProcessor;
+        EleaphProtoRPC *eleaphRpc;
+        Usermanager *managerUser;
 
     private slots:
         void handlePrivateChatMessage(EleaphRpcPacket dataPacket);

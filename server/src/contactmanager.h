@@ -4,23 +4,27 @@
 #include <QObject>
 
 // own libs
-#include "packetprocessor.h"
+#include "collective/proto/packettypes.h"
 #include "protocol.pb.h"
 #include "global.h"
+
+// sub module dependings
+#include "usermanager.h"
 
 class Contactmanager : public QObject
 {
     Q_OBJECT
     public:
         // con and decon
-        Contactmanager(PacketProcessor *packetProcessor, QObject *parent = 0);
+        Contactmanager(EleaphProtoRPC* eleaphRPC, Usermanager* managerUser, QObject *parent = 0);
 
     private:
-        PacketProcessor *packetProcessor;
+		EleaphProtoRPC* eleaphRPC;
+		Usermanager* managerUser;
 
-    private slots:
+	private slots:
         void handleContactList(EleaphRpcPacket dataPacket);
-        void handleContactChange(Protocol::User* userChanged, QIODevice *deviceProducerOfChange);
+        void handleContactChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);
 };
 
 #endif // CONTACTMANAGER_H

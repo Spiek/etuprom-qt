@@ -26,12 +26,6 @@ class PacketProcessor;
 #include "chatmanager.h"
 #include "contactmanager.h"
 
-// forward declaration, becuase of cyrcle including of the sub managers
-// (every submanager need a pointer to the PacketProcessor to access ressources)
-class Usermanager;
-class Chatmanager;
-class Contactmanager;
-
 class PacketProcessor : public QObject
 {
     Q_OBJECT

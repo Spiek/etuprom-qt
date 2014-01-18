@@ -6,165 +6,155 @@
 
 #include "usermanager.h"
 
-Usermanager::Usermanager(PacketProcessor *packetProcessor, QObject *parent) : QObject(parent)
+Usermanager::Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent) : QObject(parent)
 {
     // save eleaphrpc
-    this->packetProcessor = packetProcessor;
+    this->eleaphRPC = eleaphRPC;
 
     // handle client disconnects
-    EleaphProtoRPC* eleaphRpc = packetProcessor->getEleaphRpc();
-    this->connect(eleaphRpc, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRPCDataPacket*)));
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRPCDataPacket*)));
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRPCDataPacket*)));
+    this->connect(eleaphRPC, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRPCDataPacket*)));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRPCDataPacket*)));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRPCDataPacket*)));
+
+    // signal connections (this)
+    this->connect(this, SIGNAL(sigUserChanged(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleUserChange(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)));
 }
 
 Usermanager::~Usermanager()
 {
-    qDeleteAll(mapSocketUser);
+    // here we delete all user objects
+    qDeleteAll(this->mapSocketsUser.values());
+
+    // here we only delete the qmap "case"
+    qDeleteAll(this->mapUsersSessions.values());
 }
-
-
-//
-//  Protocol helper methods
-//
-
-void Usermanager::userChanged(qint32 userid, bool refreshUser)
-{
-    return this->userChanged(this->getConnectedDevice(userid), refreshUser);
-}
-
-void Usermanager::userChanged(QIODevice *device, bool refreshUser)
-{
-    // if we have a user change on a non logged in user, exit
-    Protocol::User* userChanged = this->getConnectedUser(device);
-    if(!userChanged) {
-        return;
-    }
-
-    // refresh user if wanted
-    if(refreshUser) {
-        this->refreshUser(userChanged);
-    }
-
-    // tell the outside world about user change
-    emit this->sigUserChanged(userChanged, device, refreshUser);
-}
-
 
 //
 //  User managment helper methods
 //
 
-void Usermanager::addUser(QIODevice *device, Protocol::User *user)
+void Usermanager::addUserSession(QIODevice *device, Protocol::User* user)
 {
-    // exit if the user does exist or the user is invalid
-    if(!user || this->mapIdUser.contains(user->id())) {
+    // exit if the user is invalid or if user is allready logged in with device
+    if(!user || this->mapSocketsUser.contains(device)) {
         return;
     }
 
-    // add to socket -> user map
-    this->mapSocketUser.insert(device, user);
+    // save Usersession (Userid --> MAP(Socket, User))
+    if(!this->mapUsersSessions.contains(user->id())) {
+        this->mapUsersSessions.insert(user->id(), new QMap<QIODevice*, Protocol::User*>());
+    }
 
-    // add to userid -> QPair(device, user) map
-    this->mapIdUser.insert(user->id(), QPair<QIODevice*, Protocol::User*>(device, user));
+    // otherwise create a new Session (the user is allready logged in so delte the new user object and take the existing one)
+    else {
+        Protocol::User* userDelete = user;
+        user = this->mapUsersSessions.value(user->id())->first();
+        delete userDelete;
+    }
+    this->mapUsersSessions.value(user->id())->insert(device, user);
 
-    // update the user in database
-    user->set_online(true);
-    Global::getDatabaseHelper()->updateUserOnlineStateById(user, true);
+    // save Socketsession (Socket --> User)
+    this->mapSocketsUser.insert(device, user);
 
-    // ... and inform all users which belongs to the user's contacht list about users state change
-    this->userChanged(user->id(), false);
+    // ... and inform the outside world (will use a QSharedPointer version of a copy of the user object, so that we have a automatic garbage collection!)
+    Protocol::User *newUser = new Protocol::User(*user);
+    emit this->sigUserChanged(Usermanager::UserShared(newUser), device, Usermanager::UserAdded);
 }
 
-void Usermanager::removeUser(QIODevice *device)
+void Usermanager::removeUserSession(QIODevice *device)
 {
-    // take from socket -> user map
-    Protocol::User *user = this->mapSocketUser.value(device);
-
-    // call overloaded method
-    return this->removeUser(user);
-}
-
-void Usermanager::removeUser(Protocol::User *user)
-{
-    // exit if the user doesn't exist or the user is invalid
-    if(!user || !this->mapIdUser.contains(user->id())) {
+    // exit if the device is invalid or if no session for device was found
+    if(!device || !this->mapSocketsUser.contains(device)) {
         return;
     }
 
-    // update the user in database
-    user->set_online(false);
-    Global::getDatabaseHelper()->updateUserOnlineStateById(user, false);
+    // take session from mapSocketUser
+    Protocol::User *user = this->mapSocketsUser.take(device);
 
-    // ... and inform all users which belongs to the user's contact list about users state change
-    this->userChanged(user->id(), false);
+    // remove session from mapUserSessions
+    QMap<QIODevice*, Protocol::User*>* mapUserSession = this->mapUsersSessions.value(user->id());
+    mapUserSession->take(device);
 
-    // REMOVE USER
+    // if the last session was taken, so kill the whole user (including usersessionmap instance)
+    if(mapUserSession->isEmpty()) {
+        // remove the user id from mapUsersSessions
+        this->mapUsersSessions.take(user->id());
 
-    // remove from userid -> QPair(device, user) map
-    QPair<QIODevice*, Protocol::User*> pairValueUser = this->mapIdUser.take(user->id());
+        // inform the outside world (will use a QSharedPointer version of a copy of the user object, so that we have a automatic garbage collection!)
+        Protocol::User *newUser = new Protocol::User(*user);
+        this->sigUserChanged(Usermanager::UserShared(newUser), device, Usermanager::UserRemoved);
 
-    // remove from socket -> user map
-    this->mapSocketUser.take(pairValueUser.first);
+        // delete user
+        delete user;
 
-    // delete user
-    delete pairValueUser.second;
+        // remove the mapuserSession "case"
+        delete mapUserSession;
+    }
 }
 
 bool Usermanager::isLoggedIn(QIODevice *device)
 {
-    return (device ? this->mapSocketUser.contains(device) : false);
+    return (device ? this->mapSocketsUser.contains(device) : false);
 }
 
 bool Usermanager::isLoggedIn(qint32 userID)
 {
-    return this->mapIdUser.contains(userID);
-}
-
-bool Usermanager::refreshUser(Protocol::User *user)
-{
-    return Global::getDatabaseHelper()->getUserById(user->id(), user);
+    return this->mapUsersSessions.contains(userID);
 }
 
 Protocol::User* Usermanager::getConnectedUser(QIODevice *device)
 {
-    return this->mapSocketUser.value(device, (Protocol::User*)0);
+    return this->mapSocketsUser.value(device, (Protocol::User*)0);
 }
 
 Protocol::User* Usermanager::getConnectedUser(qint32 userid)
 {
-    QPair<QIODevice*, Protocol::User*> pairSocketUser = this->mapIdUser.value(userid, QPair<QIODevice*, Protocol::User*>((QIODevice*)0, (Protocol::User*)0));
-    return pairSocketUser.second;
+    QMap<QIODevice*, Protocol::User*>* mapUserSessions = mapUsersSessions.value(userid, (QMap<QIODevice*, Protocol::User*>*)0);
+    return !mapUserSessions ? (Protocol::User*)0 : mapUserSessions->first();
 }
 
 QIODevice* Usermanager::getConnectedDevice(qint32 userid)
 {
-    QPair<QIODevice*, Protocol::User*> pairSocketUser = this->mapIdUser.value(userid, QPair<QIODevice*, Protocol::User*>((QIODevice*)0, (Protocol::User*)0));
-    return pairSocketUser.first;
+    QMap<QIODevice*, Protocol::User*>* mapUserSessions = mapUsersSessions.value(userid, (QMap<QIODevice*, Protocol::User*>*)0);
+    return !mapUserSessions ? (QIODevice*)0 : mapUserSessions->firstKey();
 }
 
 //
 // Signal handlings
 //
 
+void Usermanager::handleUserChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType)
+{
+    // unused....
+    Q_UNUSED(deviceProducerOfChange)
+
+    // just update the "online" state of user, if it only was removed or added
+    Protocol::User* user = userChanged.data();
+    if(changeType == Usermanager::UserAdded || changeType == Usermanager::UserRemoved) {
+        userChanged.data()->set_online(changeType == Usermanager::UserAdded);
+        Global::getDatabaseHelper()->updateUserOnlineState(user);
+    }
+
+    // otherwise if data of user was changed, so update the complete user in db
+    else if(changeType == Usermanager::UserDatachanged){
+        Global::getDatabaseHelper()->updateUserById(user);
+    }
+}
+
 void Usermanager::handle_client_disconnect(QIODevice *device)
 {
-    // if the given device is logged in, log the device/user off
-    if(this->mapSocketUser.contains(device)) {
-        this->removeUser(device);
-    }
+    this->removeUserSession(device);
 }
 
 //
 // Packet handlings
 //
-
 void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
 {
     // simplefy login packet values
     Protocol::LoginRequest request;
-    if(!request.ParseFromArray(dataPacket.data->baRawPacketData->constData(),  dataPacket.data->baRawPacketData->length())) {
+    if(!request.ParseFromArray(dataPacket.data()->baRawPacketData->constData(),  dataPacket.data()->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse LoginRequest", __PRETTY_FUNCTION__ , __LINE__);
         return;
     }
@@ -181,7 +171,7 @@ void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
     } else {
         response.set_type(Protocol::LoginResponse_Type_Success);
     }
-    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket.data->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
+    this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
 
     // if login wasn't successfull, delte constructed user and end here
     if(response.type() == Protocol::LoginResponse_Type_LoginIncorect) {
@@ -190,26 +180,22 @@ void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
     }
 
     // add user to the usermanager
-    this->addUser(dataPacket.data->ioPacketDevice, user);
+    this->addUserSession(dataPacket.data()->ioPacketDevice, user);
 }
 
 void Usermanager::handleUserInfoSelf(EleaphRpcPacket dataPacket)
 {
     // get the logged in user, if the given user is not logged in, don't handle the packet
-    Protocol::User *user = this->mapSocketUser.value(dataPacket.data->ioPacketDevice, (Protocol::User*)0);
+    Protocol::User *user = this->getConnectedUser(dataPacket.data()->ioPacketDevice);
     if(!user) {
         return;
     }
 
     // send the user it's user data
-    this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket.data->ioPacketDevice, PACKET_DESCRIPTOR_USER_SELF_GET_INFO, user->SerializeAsString());
+    this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_USER_SELF_GET_INFO, user->SerializeAsString());
 }
 
 void Usermanager::handleLogout(EleaphRpcPacket dataPacket)
 {
-    // if the given device is logged in, log the device/user off
-    QIODevice* device = dataPacket.data->ioPacketDevice;
-    if(this->mapSocketUser.contains(device)) {
-        this->removeUser(device);
-    }
+    this->removeUserSession(dataPacket.data()->ioPacketDevice);
 }

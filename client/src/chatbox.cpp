@@ -172,7 +172,7 @@ void ChatBox::handleInboundTextMessage(EleaphRpcPacket dataPacket)
 {
     // parse protocol
     Protocol::MessagePrivateServer message;
-    if(!message.ParseFromArray(dataPacket.data->baRawPacketData->constData(), dataPacket.data->baRawPacketData->length())) {
+    if(!message.ParseFromArray(dataPacket.data()->baRawPacketData->constData(), dataPacket.data()->baRawPacketData->length())) {
         qWarning("[%s][%d] - Protocol Violation by Trying to Parse MessagePrivateServer", __PRETTY_FUNCTION__ , __LINE__);
         return;
     }

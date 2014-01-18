@@ -13,48 +13,52 @@
 #include <QtCore/QIODevice>
 #include <QtCore/QPair>
 #include <QtCore/QVariant>
+#include <QtCore/QSharedPointer>
 
 // Qt (sql)
 #include <QtSql/QSqlQuery>
 
 // own libs
-#include "packetprocessor.h"
+#include "collective/proto/packettypes.h"
+#include "EleaphProtoRpc"
 #include "protocol.pb.h"
 #include "global.h"
 
 class Usermanager : public QObject
 {
     Q_OBJECT
+    public:
+        typedef QSharedPointer<Protocol::User> UserShared;
+        enum UserChangeType {
+            UserAdded = 0,
+            UserRemoved = 1,
+            UserDatachanged = 2
+        };
 
     signals:
-        void sigUserChanged(Protocol::User* userChanged, QIODevice *deviceProducerOfChange, bool userRefreshed);
+        void sigUserChanged(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);
 
     public:
         // con and decon
-        Usermanager(PacketProcessor *packetProcessor, QObject *parent = 0);
+        Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent = 0);
         ~Usermanager();
 
-        // protocol helper methods
-        void userChanged(QIODevice *device, bool refreshUser = true);
-        void userChanged(qint32 userid, bool refreshUser = true);
-
         // user managment helper methods
-        void addUser(QIODevice *device, Protocol::User *user);
-        void removeUser(Protocol::User *user);
-        void removeUser(QIODevice *device);
+        void addUserSession(QIODevice *device, Protocol::User *user);
+        void removeUserSession(QIODevice *device);
         bool isLoggedIn(QIODevice *device);
         bool isLoggedIn(qint32 userID);
-        bool refreshUser(Protocol::User *user);
         Protocol::User* getConnectedUser(QIODevice *device);
         Protocol::User* getConnectedUser(qint32 userid);
         QIODevice* getConnectedDevice(qint32 userid);
 
     private:
-        QMap<QIODevice*, Protocol::User*> mapSocketUser;
-        QMap<qint32, QPair<QIODevice*, Protocol::User*> > mapIdUser;
-        PacketProcessor *packetProcessor;
+        QMap<QIODevice*, Protocol::User*> mapSocketsUser;
+        QMap<qint32, QMap<QIODevice*, Protocol::User*>* > mapUsersSessions;
+        EleaphProtoRPC* eleaphRPC;
 
     private slots:
+        void handleUserChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);
         void handle_client_disconnect(QIODevice *device);
         void handleLogin(EleaphRpcPacket dataPacket);
         void handleLogout(EleaphRpcPacket dataPacket);

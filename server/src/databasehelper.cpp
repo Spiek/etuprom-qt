@@ -171,17 +171,14 @@ bool DatabaseHelper::updateUserById(Protocol::User *user)
     return query.exec();
 }
 
-bool DatabaseHelper::updateUserOnlineStateById(Protocol::User *user, bool onlineState)
+bool DatabaseHelper::updateUserOnlineState(Protocol::User *user)
 {
-    // construct query
-    QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::UPDATE)->
-            Update("user")->
-            UpdateField("online", onlineState ? "1" : "0", true)->
-            Where("user", "id", QString::number(user->id()), true)->
-            toQuery();
-
-    // exec query and return resulr
-    return query.exec();
+    // construct and exec query
+    return  QueryBuilder::initQuery(QueryBuilder::UPDATE)->
+                Update("user")->
+                UpdateField("online", user->online() ? "1" : "0", true)->
+                Where("user", "id", QString::number(user->id()), true)->
+                toQuery().exec();
 }
 
 

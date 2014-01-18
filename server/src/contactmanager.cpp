@@ -1,22 +1,22 @@
 #include "contactmanager.h"
 
-Contactmanager::Contactmanager(PacketProcessor *packetProcessor, QObject *parent) : QObject(parent)
+Contactmanager::Contactmanager(EleaphProtoRPC *eleaphRPC, Usermanager *managerUser, QObject *parent) : QObject(parent)
 {
     // save eleaphrpc
-    this->packetProcessor = packetProcessor;
+    this->eleaphRPC = eleaphRPC;
+    this->managerUser = managerUser;
 
     // register all needed protocol messages
-    EleaphProtoRPC* eleaphRpc = packetProcessor->getEleaphRpc();
-    eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_GET_LIST, this, SLOT(handleContactList(EleaphRPCDataPacket*)));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_GET_LIST, this, SLOT(handleContactList(EleaphRPCDataPacket*)));
 
     // connect all needed signals from other modules
-    this->connect(this->packetProcessor->getUserManager(), SIGNAL(sigUserChanged(Protocol::User*,QIODevice*,bool)), this, SLOT(handleContactChange(Protocol::User*,QIODevice*)));
+    this->connect(managerUser, SIGNAL(sigUserChanged(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleContactChange(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)));
 }
 
 void Contactmanager::handleContactList(EleaphRpcPacket dataPacket)
 {
     // get the logged in user, if the given user is not logged in, don't handle the packet
-    Protocol::User *user = this->packetProcessor->getUserManager()->getConnectedUser(dataPacket.data->ioPacketDevice);
+    Protocol::User *user = this->managerUser->getConnectedUser(dataPacket.data()->ioPacketDevice);
     if(!user) {
         return;
     }
@@ -27,19 +27,21 @@ void Contactmanager::handleContactList(EleaphRpcPacket dataPacket)
     // get (if available) all contacts from logged in user and send the list to the logged in user, otherwise send empty packet
     Protocol::ContactList contactList;
     if(databaseHelper->getContactsByUserId(user->id(), &contactList)) {
-        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket.data->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST, contactList.SerializeAsString());
+        this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST, contactList.SerializeAsString());
     } else {
-        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(dataPacket.data->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST);
+        this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST);
     }
 }
 
-void Contactmanager::handleContactChange(Protocol::User* userChanged, QIODevice* deviceProducerOfChange)
+void Contactmanager::handleContactChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType)
 {
+    Q_UNUSED(changeType);
+
     // select all users from changed user's contact list which are online
     Protocol::Users users;
 
     // if no contact in contact list of changed user is online, don't inform anyone
-    if(!Global::getDatabaseHelper()->getAllOnlineContactsByUserId(userChanged->id(), &users)) {
+    if(!Global::getDatabaseHelper()->getAllOnlineContactsByUserId(userChanged.data()->id(), &users)) {
         return;
     }
 
@@ -49,12 +51,12 @@ void Contactmanager::handleContactChange(Protocol::User* userChanged, QIODevice*
         qint32 intUserIdOfUserToInform = users.mutable_user(i)->id();
 
         // get device of conntected user, and skip him if he isn't really contected (if no device was found!)
-        QIODevice *deviceOfUserToInform = this->packetProcessor->getUserManager()->getConnectedDevice(intUserIdOfUserToInform);
+        QIODevice *deviceOfUserToInform = this->managerUser->getConnectedDevice(intUserIdOfUserToInform);
         if(!deviceOfUserToInform || deviceOfUserToInform == deviceProducerOfChange) {
             continue;
         }
 
         // inform connected user in contactlist of changed user, about the change
-        this->packetProcessor->getEleaphRpc()->sendRPCDataPacket(deviceOfUserToInform, PACKET_DESCRIPTOR_CONTACT_ALTERED, userChanged->SerializeAsString());
+        this->eleaphRPC->sendRPCDataPacket(deviceOfUserToInform, PACKET_DESCRIPTOR_CONTACT_ALTERED, userChanged.data()->SerializeAsString());
     }
 }

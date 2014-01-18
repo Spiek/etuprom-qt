@@ -14,53 +14,16 @@
 #include <QtCore/QMultiMap>
 #include <QtCore/QMetaObject>
 #include <QtCore/QEventLoop>
+#include <QtCore/QSharedPointer>
 
 struct ElaphRpcPacketData : EleaphPacketData
 {
     QString strMethodName;
-
-    private:
-        QAtomicInt refCounter;
-
-    friend class EleaphRpcPacket;
 };
 
-class EleaphRpcPacket
-{
-    public:
-        EleaphRpcPacket()
-        {
-            this->data = 0;
-        }
+typedef QSharedPointer<ElaphRpcPacketData> EleaphRpcPacket;
 
-        EleaphRpcPacket(ElaphRpcPacketData *dataPacket)
-        {
-            dataPacket->refCounter.ref();
-            this->data = dataPacket;
-        }
 
-        EleaphRpcPacket(const EleaphRpcPacket &other)
-        {
-            other.data->refCounter.ref();
-            this->data = other.data;
-        }
-
-        EleaphRpcPacket& operator= (const EleaphRpcPacket &other)
-        {
-            other.data->refCounter.ref();
-            this->data = other.data;
-            return *this;
-        }
-
-        ~EleaphRpcPacket()
-        {
-            if (this->data && !this->data->refCounter.deref()) {
-                delete this->data;
-            }
-        }
-
-        ElaphRpcPacketData *data;
-};
 
 class EleaphProtoRPC : public IEleaph
 {

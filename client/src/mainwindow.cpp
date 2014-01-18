@@ -85,7 +85,7 @@ void MainWindow::onContactClicked(QTreeWidgetItem *widgetClicked, int column)
 void MainWindow::handleUserAltered(EleaphRpcPacket dataPacket)
 {
     Protocol::User user;
-    user.ParseFromArray(dataPacket.data->baRawPacketData->data(), dataPacket.data->baRawPacketData->length());
+    user.ParseFromArray(dataPacket.data()->baRawPacketData->data(), dataPacket.data()->baRawPacketData->length());
     this->setupUser(&user);
 }
 
@@ -96,8 +96,10 @@ void MainWindow::handleLogout()
     Global::mapContactList.clear();
     Global::mapCachedUsers.clear();
 
-    // process logout
-    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, "logout");
+    // send logout to server
+    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_USER_LOGOUT);
+
+    // logout client
     this->deleteLater();
     LoginForm *loginForm = new LoginForm("Successfull logged out...");
     loginForm->show();
