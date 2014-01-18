@@ -42,7 +42,9 @@ void Usermanager::addUserSession(QIODevice *device, Protocol::User* user)
     }
 
     // save Usersession (Userid --> MAP(Socket, User))
+    Usermanager::UserChangeType userChangeType = Usermanager::UserChangeType::UserSessionAdded;
     if(!this->mapUsersSessions.contains(user->id())) {
+        userChangeType = (Usermanager::UserChangeType)((quint8)userChangeType | (quint8)Usermanager::UserChangeType::UserAdded);
         this->mapUsersSessions.insert(user->id(), new QMap<QIODevice*, Protocol::User*>());
     }
 
@@ -59,7 +61,7 @@ void Usermanager::addUserSession(QIODevice *device, Protocol::User* user)
 
     // ... and inform the outside world (will use a QSharedPointer version of a copy of the user object, so that we have a automatic garbage collection!)
     Protocol::User *newUser = new Protocol::User(*user);
-    emit this->sigUserChanged(Usermanager::UserShared(newUser), device, Usermanager::UserAdded);
+    emit this->sigUserChanged(Usermanager::UserShared(newUser), device, userChangeType);
 }
 
 void Usermanager::removeUserSession(QIODevice *device)
@@ -77,20 +79,20 @@ void Usermanager::removeUserSession(QIODevice *device)
     mapUserSession->take(device);
 
     // if the last session was taken, so kill the whole user (including usersessionmap instance)
+    Usermanager::UserChangeType userChangeType = Usermanager::UserChangeType::UserSessionRemoved;
     if(mapUserSession->isEmpty()) {
         // remove the user id from mapUsersSessions
         this->mapUsersSessions.take(user->id());
 
-        // inform the outside world (will use a QSharedPointer version of a copy of the user object, so that we have a automatic garbage collection!)
-        Protocol::User *newUser = new Protocol::User(*user);
-        this->sigUserChanged(Usermanager::UserShared(newUser), device, Usermanager::UserRemoved);
-
-        // delete user
-        delete user;
+        // generate correct userChangeType
+        userChangeType = (Usermanager::UserChangeType)((quint8)userChangeType | (quint8)Usermanager::UserChangeType::UserRemoved);
 
         // remove the mapuserSession "case"
         delete mapUserSession;
     }
+
+    // inform the outside world (will use a QSharedPointer version of a copy of the user object, so that we have a automatic garbage collection!)
+    this->sigUserChanged(Usermanager::UserShared(user), device, userChangeType);
 }
 
 bool Usermanager::isLoggedIn(QIODevice *device)
@@ -129,16 +131,11 @@ void Usermanager::handleUserChange(Usermanager::UserShared userChanged, QIODevic
     // unused....
     Q_UNUSED(deviceProducerOfChange)
 
-    // just update the "online" state of user, if it only was removed or added
+    // just update the "online" state of user, if user has his first login or last logout
     Protocol::User* user = userChanged.data();
-    if(changeType == Usermanager::UserAdded || changeType == Usermanager::UserRemoved) {
-        userChanged.data()->set_online(changeType == Usermanager::UserAdded);
+    if(changeType == Usermanager::UserChangeType::UserAdded || changeType == Usermanager::UserChangeType::UserRemoved) {
+        userChanged.data()->set_online(changeType == Usermanager::UserChangeType::UserAdded);
         Global::getDatabaseHelper()->updateUserOnlineState(user);
-    }
-
-    // otherwise if data of user was changed, so update the complete user in db
-    else if(changeType == Usermanager::UserDatachanged){
-        Global::getDatabaseHelper()->updateUserById(user);
     }
 }
 

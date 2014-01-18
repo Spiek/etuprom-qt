@@ -214,7 +214,7 @@ QueryBuilder* QueryBuilder::Limit(int limit)
 // Select Query functions
 //
 
-QueryBuilder* QueryBuilder::SelectTable(QString strTable, QString strTableAlias, QueryBuilder::JoinType joinTypeIfNeccessary)
+QueryBuilder* QueryBuilder::SelectTable(QString strTable, QString strTableAlias)
 {
     // exist if table doesn't exist
     if(!this->mapTableSchema.contains(strTable)) {
@@ -237,7 +237,7 @@ QueryBuilder* QueryBuilder::SelectTable(QString strTable, QString strTableAlias,
     return this;
 }
 
-QueryBuilder* QueryBuilder::SelectField(QString strTable, QString strColumn, QString strAlias, QueryBuilder::JoinType joinTypeIfNeccessary)
+QueryBuilder* QueryBuilder::SelectField(QString strTable, QString strColumn, QString strAlias)
 {
     // exit if table and column doesn't exist in database
     if(!this->mapTableSchema.contains(strTable) || !this->mapTableSchema.value(strTable).contains(strColumn)) {

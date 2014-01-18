@@ -8,6 +8,9 @@
 QT       += core network sql
 QT       -= gui
 
+# enable C++11
+CONFIG += c++11
+
 # Compile Settings
 TARGET	= SQMServer
 CONFIG	+= console

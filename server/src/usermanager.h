@@ -29,10 +29,14 @@ class Usermanager : public QObject
     Q_OBJECT
     public:
         typedef QSharedPointer<Protocol::User> UserShared;
-        enum UserChangeType {
-            UserAdded = 0,
-            UserRemoved = 1,
-            UserDatachanged = 2
+        enum class UserChangeType : quint8 {
+            // if first session will be creation "UserAdded" will be set too
+            UserAdded           = 1,
+            UserSessionAdded    = 2,
+
+            // if last session will be deleted "UserRemoved" will be set too
+            UserRemoved         = 4,
+            UserSessionRemoved  = 8
         };
 
     signals:

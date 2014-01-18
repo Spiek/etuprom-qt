@@ -92,8 +92,8 @@ class QueryBuilder
         QueryBuilder* Limit(int limit = -1);
 
         // Select Query functions
-        QueryBuilder* SelectTable(QString strTable, QString strTableAlias = "", QueryBuilder::JoinType joinTypeIfNeccessary = QueryBuilder::INNER);
-        QueryBuilder* SelectField(QString strTable, QString strColumn, QString strAlias = "", QueryBuilder::JoinType joinTypeIfNeccessary = QueryBuilder::INNER);
+        QueryBuilder* SelectTable(QString strTable, QString strTableAlias = "");
+        QueryBuilder* SelectField(QString strTable, QString strColumn, QString strAlias = "");
         QueryBuilder* From(QString strTable);
         QueryBuilder* Join(QString strTable, QueryBuilder::JoinType type = QueryBuilder::INNER);
         QueryBuilder* Join(QString strTableSrc, QString strTableTarget, QString strOnCondition, QueryBuilder::JoinType type = QueryBuilder::INNER);
