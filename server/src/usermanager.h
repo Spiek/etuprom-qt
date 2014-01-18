@@ -56,10 +56,17 @@ class Usermanager : public QObject
         Protocol::User* getConnectedUser(qint32 userid);
         QIODevice* getConnectedDevice(qint32 userid);
 
+        // settings setter/getter
+        void setSettingsActivateMultiSessions(bool enabled);
+        bool getSettingsActivateMultiSession();
+
     private:
         QMap<QIODevice*, Protocol::User*> mapSocketsUser;
         QMap<qint32, QMap<QIODevice*, Protocol::User*>* > mapUsersSessions;
         EleaphProtoRPC* eleaphRPC;
+
+        // settings
+        bool boolSettingsMultiSessionsActive;
 
     private slots:
         void handleUserChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);

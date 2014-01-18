@@ -11,6 +11,9 @@ Usermanager::Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent) : QObject(p
     // save eleaphrpc
     this->eleaphRPC = eleaphRPC;
 
+    // set default settings
+    this->boolSettingsMultiSessionsActive = true;
+
     // handle client disconnects
     this->connect(eleaphRPC, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
     eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRPCDataPacket*)));
@@ -145,6 +148,21 @@ void Usermanager::handle_client_disconnect(QIODevice *device)
 }
 
 //
+// Settings (setter/getter)
+//
+
+void Usermanager::setSettingsActivateMultiSessions(bool enabled)
+{
+    this->boolSettingsMultiSessionsActive = enabled;
+}
+
+bool Usermanager::getSettingsActivateMultiSession()
+{
+    return this->boolSettingsMultiSessionsActive;
+}
+
+
+//
 // Packet handlings
 //
 void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
@@ -165,13 +183,15 @@ void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
     Protocol::LoginResponse response;
     if(!Global::getDatabaseHelper()->getUserByIdUserNameAndPw(strUsername, strPassword, user)) {
         response.set_type(Protocol::LoginResponse_Type_LoginIncorect);
-    } else {
+    } else if(this->boolSettingsMultiSessionsActive || !this->isLoggedIn(user->id())) {
         response.set_type(Protocol::LoginResponse_Type_Success);
+    } else {
+        response.set_type(Protocol::LoginResponse_Type_AllreadyLoggedIn);
     }
     this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
 
     // if login wasn't successfull, delte constructed user and end here
-    if(response.type() == Protocol::LoginResponse_Type_LoginIncorect) {
+    if(response.type() != Protocol::LoginResponse_Type_Success) {
         delete user;
         return;
     }

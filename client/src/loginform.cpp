@@ -141,6 +141,11 @@ void LoginForm::login()
         this->ui->centralwidget->setDisabled(false);
     }
 
+    else if(responseLogin.type() == Protocol::LoginResponse_Type_AllreadyLoggedIn) {
+        this->ui->statusbar->showMessage("Login failed, only one login is allowed...");
+        this->ui->centralwidget->setDisabled(false);
+    }
+
     // login was success, get now all needed extra informations for main form
     else {
         this->ui->statusbar->showMessage("Login Success...");

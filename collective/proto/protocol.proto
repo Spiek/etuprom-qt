@@ -10,7 +10,7 @@ message LoginRequest
 message LoginResponse
 {
 	// Messagetype
-	enum Type { Success = 1; LoginIncorect = 2; }
+	enum Type { Success = 1; LoginIncorect = 2; AllreadyLoggedIn = 3; }
 
 	// repsonse type
 	required Type type = 1;
