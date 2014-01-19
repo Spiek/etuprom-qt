@@ -136,8 +136,10 @@ void Usermanager::handleUserChange(Usermanager::UserShared userChanged, QIODevic
 
     // just update the "online" state of user, if user has his first login or last logout
     Protocol::User* user = userChanged.data();
-    if(changeType == Usermanager::UserChangeType::UserAdded || changeType == Usermanager::UserChangeType::UserRemoved) {
-        userChanged.data()->set_online(changeType == Usermanager::UserChangeType::UserAdded);
+    if(((quint8)changeType & (quint8)Usermanager::UserChangeType::UserAdded) ||
+       ((quint8)changeType & (quint8)Usermanager::UserChangeType::UserRemoved))
+    {
+        userChanged.data()->set_online(((quint8)changeType & (quint8)Usermanager::UserChangeType::UserAdded));
         Global::getDatabaseHelper()->updateUserOnlineState(user);
     }
 }
@@ -185,7 +187,7 @@ void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
         response.set_type(Protocol::LoginResponse_Type_LoginIncorect);
     } else if(this->boolSettingsMultiSessionsActive || !this->isLoggedIn(user->id())) {
         response.set_type(Protocol::LoginResponse_Type_Success);
-    } else {
+    }  else {
         response.set_type(Protocol::LoginResponse_Type_AllreadyLoggedIn);
     }
     this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
