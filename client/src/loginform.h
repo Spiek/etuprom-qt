@@ -41,6 +41,7 @@ class LoginForm : public QMainWindow
 
     private slots:
         // Gui
+        void loadDesign(QString strDesign = "default");
         bool loginValidator();
         void login();
         void getNeededDataForMainForm();

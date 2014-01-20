@@ -2,119 +2,16 @@
 <ui version="4.0">
  <class>LoginForm</class>
  <widget class="QMainWindow" name="LoginForm">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>360</width>
-    <height>333</height>
-   </rect>
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
-  </property>
-  <property name="styleSheet">
-   <string notr="true">/*
- * Login Box
- */
-#groupBoxLogin {
-	margin: 0 auto;
-	position: relative;
-	
-	border-radius: 5px;
-}
-
-/*
- * Label's
- */
-QLabel {
-	font-family: 'Bree Serif', serif;
-	line-height:34px;
-	color: #414848;	
-}
-
-#labelHeader {
-	font-weight: 300;
-	font-size: 28px;
-	margin-bottom: 10px;
-}
-
-/*
- * LineEdit's
- */
-QLineEdit {
-	width: 188px;
-	padding: 15px 25px;
-	
-	font-family: &quot;HelveticaNeue-Light&quot;, &quot;Helvetica Neue Light&quot;, &quot;Helvetica Neue&quot;, Helvetica, Arial, &quot;Lucida Grande&quot;, sans-serif;
-	font-weight: 400;
-	font-size: 14px;
-	color: #9d9e9e;
-	
-	background: #fff;
-	border: 1px solid #fff;
-	border-radius: 5px;
-}
-
-QLineEdit:hover {
-	background: #dfe9ec;
-	color: #414848;
-}
-
-QLineEdit:focus {
-	background: #dfe9ec;
-	color: #414848;
-}
-
-/*
- * PushButton's
- */
-QPushButton {
-	float: right;
-	padding: 10px;
-	
-	background: none;
-	border: none;
-	
-	font-family: 'Bree Serif', serif;
-	font-weight: 300;
-	font-size: 18px;
-	color: #414848;
-	border: 1px solid #fff;
-	border-radius: 5px;
-}
-
-QPushButton:hover {
-	color: #3f9db8;
-	background: #dfe9ec;
-}
-
-QPushButton:focus {
-	position: relative;
-	bottom: -1px;
-}
-
-QPushButton:pressed {
-	background: #888888  ;
-}</string>
+   <string>SQM Client</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_2">
-    <item row="1" column="3">
-     <spacer name="horizontalSpacer">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>71</width>
-        <height>20</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="2" column="1">
-     <spacer name="verticalSpacer_2">
+   <layout class="QGridLayout" name="_2">
+    <item row="0" column="1">
+     <spacer name="verticalSpacer">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
       </property>
@@ -131,6 +28,9 @@ QPushButton:pressed {
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
+      <property name="sizeType">
+       <enum>QSizePolicy::Expanding</enum>
+      </property>
       <property name="sizeHint" stdset="0">
        <size>
         <width>78</width>
@@ -139,29 +39,13 @@ QPushButton:pressed {
       </property>
      </spacer>
     </item>
-    <item row="0" column="1">
-     <spacer name="verticalSpacer">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-      <property name="sizeHint" stdset="0">
-       <size>
-        <width>20</width>
-        <height>24</height>
-       </size>
-      </property>
-     </spacer>
-    </item>
-    <item row="1" column="1" colspan="2">
+    <item row="1" column="1">
      <widget class="QGroupBox" name="groupBoxLogin">
-      <property name="title">
-       <string/>
-      </property>
-      <property name="flat">
+      <property name="enabled">
        <bool>true</bool>
       </property>
-      <property name="checkable">
-       <bool>false</bool>
+      <property name="title">
+       <string/>
       </property>
       <property name="checked">
        <bool>false</bool>
@@ -169,8 +53,11 @@ QPushButton:pressed {
       <layout class="QGridLayout" name="gridLayout">
        <item row="5" column="0">
         <widget class="QLineEdit" name="lineEditPassword">
-         <property name="echoMode">
-          <enum>QLineEdit::Password</enum>
+         <property name="placeholderText">
+          <string>Fill with your Password</string>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -182,7 +69,14 @@ QPushButton:pressed {
         </widget>
        </item>
        <item row="3" column="0">
-        <widget class="QLineEdit" name="lineEditLogin"/>
+        <widget class="QLineEdit" name="lineEditLogin">
+         <property name="placeholderText">
+          <string>Fill with your Username</string>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
        <item row="2" column="0">
         <widget class="QLabel" name="labelLogin">
@@ -210,7 +104,7 @@ QPushButton:pressed {
        <item row="6" column="0">
         <widget class="QPushButton" name="pushButtonLogin">
          <property name="enabled">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="text">
           <string>Login</string>
@@ -219,6 +113,35 @@ QPushButton:pressed {
        </item>
       </layout>
      </widget>
+    </item>
+    <item row="1" column="2">
+     <spacer name="horizontalSpacer">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="sizeType">
+       <enum>QSizePolicy::Expanding</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>71</width>
+        <height>20</height>
+       </size>
+      </property>
+     </spacer>
+    </item>
+    <item row="2" column="1">
+     <spacer name="verticalSpacer_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <property name="sizeHint" stdset="0">
+       <size>
+        <width>20</width>
+        <height>25</height>
+       </size>
+      </property>
+     </spacer>
     </item>
    </layout>
   </widget>
@@ -253,11 +176,19 @@ QPushButton:pressed {
    </property>
   </action>
   <action name="actionAbout">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
    <property name="text">
     <string>About</string>
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>lineEditLogin</tabstop>
+  <tabstop>lineEditPassword</tabstop>
+  <tabstop>pushButtonLogin</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

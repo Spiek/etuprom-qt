@@ -1,0 +1,87 @@
+/*
+ * Labels
+ */
+QLabel {
+	font-family: 'Bree Serif', serif;
+	line-height: 34px;
+	color: #414848;
+	font-size: 15px;
+}
+
+#labelHeader {
+	font-weight: 300;
+	font-size: 30px;
+	margin-bottom: 10px;
+}
+
+/*
+ * Group Boxes
+ */
+
+#groupBoxLogin {
+	margin: 0 auto;
+	position: relative;
+	border-radius: 10px;
+}
+
+/*
+ * Line Edits
+ */
+
+QLineEdit {
+	width: 188px;
+	padding: 15px 25px;
+	
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+	font-weight: 400;
+	font-size: 14px;
+	color: #707070;
+	
+	border: 1px solid #fff;
+	border-radius: 10px;
+}
+
+QLineEdit:hover {
+	background: #dfe9ec;
+	color: #414848;
+}
+
+QLineEdit:focus {
+	background: #dfe9ec;
+	color: #414848;
+}
+
+/*
+ * Push Buttons
+ */
+
+QPushButton {
+	float: right;
+	padding: 5px;
+	
+	font-family: 'Bree Serif', serif;
+	font-weight: 300;
+	font-size: 18px;
+	color: #414848;
+	border: 1px solid #fff;
+	border-radius: 10px;
+}
+
+QPushButton:hover {
+	color: #3f9db8;
+	background: #dfe9ec;
+}
+
+QPushButton:focus {
+	color: #3f9db8;
+	background: #dfe9ec;
+}
+
+QPushButton:pressed {
+	background: #888888  ;
+}
+
+QPushButton:disabled {
+	color:	#A0A0A0 ;
+	background: #E8E8E8 ;
+}

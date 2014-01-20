@@ -13,6 +13,10 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 {
     ui->setupUi(this);
 
+    // some style improvings
+    this->loadDesign("default");
+    this->setMaximumSize(this->size());
+
     // if error message was set, set error message
     if(!strErrorMessage.isEmpty()) {
         this->ui->statusbar->showMessage(strErrorMessage);
@@ -93,6 +97,16 @@ void LoginForm::serverDisconnected()
     QTimer::singleShot(3000, this, SLOT(connectToServer()));
 }
 
+//
+// Style
+//
+void LoginForm::loadDesign(QString strDesign)
+{
+    // set stylesheet
+    QFile file(QString("design/%1/Login/form.css").arg(strDesign));
+    file.open(QFile::ReadOnly);
+    this->ui->centralwidget->setStyleSheet(file.readAll());
+}
 
 //
 // Login
