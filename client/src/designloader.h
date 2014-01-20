@@ -5,8 +5,7 @@
 #include <QUrl>
 #include <QString>
 #include <QFile>
-#include <QFileInfo>
-
+#include <QDir>
 
 class DesignLoader
 {

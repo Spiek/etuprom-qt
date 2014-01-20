@@ -5,7 +5,7 @@ DesignLoader::ChatDesign DesignLoader::loadChatDesign(QString strDesign)
     // create some global path pars
     QString strDesignPath = QString("design/%1/ChatBox/").arg(strDesign);
     DesignLoader::ChatDesign design;
-    design.urlDesigndir = QUrl::fromLocalFile(QFileInfo(strDesignPath).absoluteFilePath());
+    design.urlDesigndir = QUrl::fromLocalFile(QDir(strDesignPath).absolutePath() + "/");
 
     // load "global" design configuration
     design.strMainHtml = DesignLoader::readFileContent(QString("%1/main.html").arg(strDesignPath));
