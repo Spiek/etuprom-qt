@@ -10,7 +10,7 @@ Contactmanager::Contactmanager(EleaphProtoRPC *eleaphRPC, Usermanager *managerUs
     eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_GET_LIST, this, SLOT(handleContactList(EleaphRPCDataPacket*)));
 
     // connect all needed signals from other modules
-    this->connect(managerUser, SIGNAL(sigUserChanged(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleContactChange(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)));
+    this->connect(managerUser, SIGNAL(sigUserChanged(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleContactChange(Usermanager::UserShared)));
 }
 
 void Contactmanager::handleContactList(EleaphRpcPacket dataPacket)
@@ -33,10 +33,8 @@ void Contactmanager::handleContactList(EleaphRpcPacket dataPacket)
     }
 }
 
-void Contactmanager::handleContactChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType)
+void Contactmanager::handleContactChange(Usermanager::UserShared userChanged)
 {
-    Q_UNUSED(changeType);
-
     // select all users from changed user's contact list which are online
     Protocol::Users users;
 
@@ -50,13 +48,9 @@ void Contactmanager::handleContactChange(Usermanager::UserShared userChanged, QI
         // extract needed values from protobuf message
         qint32 intUserIdOfUserToInform = users.mutable_user(i)->id();
 
-        // get device of conntected user, and skip him if he isn't really contected (if no device was found!)
-        QIODevice *deviceOfUserToInform = this->managerUser->getConnectedDevice(intUserIdOfUserToInform);
-        if(!deviceOfUserToInform || deviceOfUserToInform == deviceProducerOfChange) {
-            continue;
+        // inform all sessions of online "contact list"-users about the user change
+        foreach(QIODevice *deviceOfUserToInform, this->managerUser->getConnectedSessions(intUserIdOfUserToInform)) {
+            this->eleaphRPC->sendRPCDataPacket(deviceOfUserToInform, PACKET_DESCRIPTOR_CONTACT_ALTERED, userChanged.data()->SerializeAsString());
         }
-
-        // inform connected user in contactlist of changed user, about the change
-        this->eleaphRPC->sendRPCDataPacket(deviceOfUserToInform, PACKET_DESCRIPTOR_CONTACT_ALTERED, userChanged.data()->SerializeAsString());
     }
 }

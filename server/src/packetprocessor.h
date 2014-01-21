@@ -7,9 +7,6 @@
 #ifndef SQMPACKETPROCESSOR_H
 #define SQMPACKETPROCESSOR_H
 
-// forward declaration
-class PacketProcessor;
-
 // Qt (core)
 #include <QtCore/QObject>
 #include <QtCore/QMap>
@@ -34,7 +31,10 @@ class PacketProcessor : public QObject
         PacketProcessor(EleaphProtoRPC* eleaphRpc, QObject *parent = 0);
         ~PacketProcessor();
         EleaphProtoRPC* getEleaphRpc();
+
+        // manager getter
         Usermanager* getUserManager();
+        Chatmanager* getChatManager();
         Contactmanager* getContactManager();
 
     private:

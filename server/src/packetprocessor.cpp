@@ -40,6 +40,12 @@ Usermanager* PacketProcessor::getUserManager()
     return this->managerUser;
 }
 
+Chatmanager* PacketProcessor::getChatManager()
+{
+    return this->managerChat;
+}
+
+
 Contactmanager* PacketProcessor::getContactManager()
 {
     return this->managerContact;

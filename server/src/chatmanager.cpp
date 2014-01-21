@@ -50,9 +50,10 @@ void Chatmanager::handlePrivateChatMessage(EleaphRpcPacket dataPacket)
         messageForClient.set_timestamp(intTimeStampCreated);
 
         // send Private Message packet to the target user
-        QIODevice *deviceTargetUser = userManager->getConnectedDevice(intUserIdReceiver);
-        eleaphRpc->sendRPCDataPacket(deviceTargetUser, PACKET_DESCRIPTOR_CHAT_PRIVATE, messageForClient.SerializeAsString());
-        boolTransfered = true;
+        foreach(QIODevice *deviceTargetUser, userManager->getConnectedSessions(intUserIdReceiver)) {;
+            eleaphRpc->sendRPCDataPacket(deviceTargetUser, PACKET_DESCRIPTOR_CHAT_PRIVATE, messageForClient.SerializeAsString());
+            boolTransfered = true;
+        }
     }
 
     // save message in the database

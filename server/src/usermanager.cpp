@@ -6,6 +6,9 @@
 
 #include "usermanager.h"
 
+//
+// Con and decon
+//
 Usermanager::Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent) : QObject(parent)
 {
     // save eleaphrpc
@@ -14,11 +17,11 @@ Usermanager::Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent) : QObject(p
     // set default settings
     this->boolSettingsMultiSessionsActive = true;
 
-    // handle client disconnects
-    this->connect(eleaphRPC, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handle_client_disconnect(QIODevice*)));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRPCDataPacket*)));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRPCDataPacket*)));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRPCDataPacket*)));
+    // protocol handlers
+    this->connect(eleaphRPC, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handleClientDisconnect(QIODevice*)));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRpcPacket)));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)));
 
     // signal connections (this)
     this->connect(this, SIGNAL(sigUserChanged(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleUserChange(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)));
@@ -33,8 +36,9 @@ Usermanager::~Usermanager()
     qDeleteAll(this->mapUsersSessions.values());
 }
 
+
 //
-//  User managment helper methods
+// External user managment helper methods
 //
 
 void Usermanager::addUserSession(QIODevice *device, Protocol::User* user)
@@ -119,38 +123,15 @@ Protocol::User* Usermanager::getConnectedUser(qint32 userid)
     return !mapUserSessions ? (Protocol::User*)0 : mapUserSessions->first();
 }
 
-QIODevice* Usermanager::getConnectedDevice(qint32 userid)
+QList<QIODevice*> Usermanager::getConnectedSessions(qint32 userid)
 {
     QMap<QIODevice*, Protocol::User*>* mapUserSessions = mapUsersSessions.value(userid, (QMap<QIODevice*, Protocol::User*>*)0);
-    return !mapUserSessions ? (QIODevice*)0 : mapUserSessions->firstKey();
+    return !mapUserSessions ? QList<QIODevice*>() : mapUserSessions->keys();
 }
 
-//
-// Signal handlings
-//
-
-void Usermanager::handleUserChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType)
-{
-    // unused....
-    Q_UNUSED(deviceProducerOfChange)
-
-    // just update the "online" state of user, if user has his first login or last logout
-    Protocol::User* user = userChanged.data();
-    if(((quint8)changeType & (quint8)Usermanager::UserChangeType::UserAdded) ||
-       ((quint8)changeType & (quint8)Usermanager::UserChangeType::UserRemoved))
-    {
-        userChanged.data()->set_online(((quint8)changeType & (quint8)Usermanager::UserChangeType::UserAdded));
-        Global::getDatabaseHelper()->updateUserOnlineState(user);
-    }
-}
-
-void Usermanager::handle_client_disconnect(QIODevice *device)
-{
-    this->removeUserSession(device);
-}
 
 //
-// Settings (setter/getter)
+// Settings setter/getter
 //
 
 void Usermanager::setSettingsActivateMultiSessions(bool enabled)
@@ -165,8 +146,9 @@ bool Usermanager::getSettingsActivateMultiSession()
 
 
 //
-// Packet handlings
+// Packet Event handlers
 //
+
 void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
 {
     // simplefy login packet values
@@ -202,6 +184,11 @@ void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
     this->addUserSession(dataPacket.data()->ioPacketDevice, user);
 }
 
+void Usermanager::handleLogout(EleaphRpcPacket dataPacket)
+{
+    this->removeUserSession(dataPacket.data()->ioPacketDevice);
+}
+
 void Usermanager::handleUserInfoSelf(EleaphRpcPacket dataPacket)
 {
     // get the logged in user, if the given user is not logged in, don't handle the packet
@@ -214,7 +201,27 @@ void Usermanager::handleUserInfoSelf(EleaphRpcPacket dataPacket)
     this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_USER_SELF_GET_INFO, user->SerializeAsString());
 }
 
-void Usermanager::handleLogout(EleaphRpcPacket dataPacket)
+
+//
+// Low Level Event handlers
+//
+
+void Usermanager::handleClientDisconnect(QIODevice *device)
 {
-    this->removeUserSession(dataPacket.data()->ioPacketDevice);
+    this->removeUserSession(device);
+}
+
+void Usermanager::handleUserChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType)
+{
+    // unused....
+    Q_UNUSED(deviceProducerOfChange)
+
+    // just update the "online" state of user, if user has his first login or last logout
+    Protocol::User* user = userChanged.data();
+    if(((quint8)changeType & (quint8)Usermanager::UserChangeType::UserAdded) ||
+       ((quint8)changeType & (quint8)Usermanager::UserChangeType::UserRemoved))
+    {
+        userChanged.data()->set_online(((quint8)changeType & (quint8)Usermanager::UserChangeType::UserAdded));
+        Global::getDatabaseHelper()->updateUserOnlineState(user);
+    }
 }

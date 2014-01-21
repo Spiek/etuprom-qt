@@ -24,7 +24,7 @@ class Contactmanager : public QObject
 
 	private slots:
         void handleContactList(EleaphRpcPacket dataPacket);
-        void handleContactChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);
+        void handleContactChange(Usermanager::UserShared userChanged);
 };
 
 #endif // CONTACTMANAGER_H
