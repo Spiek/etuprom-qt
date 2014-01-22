@@ -59,4 +59,7 @@ message MessagePrivateServer
 	required User userSender = 1;
 	required string text = 2;
 	required uint32 timestamp = 3;
+	
+	enum Receiver { Target = 1; Session = 2; }
+	required Receiver direction = 4;
 }

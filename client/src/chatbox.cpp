@@ -178,7 +178,7 @@ void ChatBox::handleInboundTextMessage(EleaphRpcPacket dataPacket)
     }
 
     // add message
-    return this->addMessage(QString::fromStdString(message.text()), message.mutable_usersender(), true, message.timestamp());
+    return this->addMessage(QString::fromStdString(message.text()), message.mutable_usersender(), message.direction() == Protocol::MessagePrivateServer_Receiver_Target, message.timestamp());
 }
 
 
