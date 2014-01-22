@@ -191,11 +191,12 @@ bool DatabaseHelper::insertMessagePrivate(qint32 intUserIdSrc, qint32 intUserIdT
     // construct query
     QSqlQuery query = QueryBuilder::initQuery(QueryBuilder::INSERT)->
             Insert("messageprivate")->
-            InsertField("user_id", QString::number(intUserIdSrc), true)->
-            InsertField("user_id_receiver", QString::number(intUserIdTarget), true)->
-            InsertField("text", strText)->
+            InsertField("sender_user_id", QString::number(intUserIdSrc), true)->
+            InsertField("receiver_user_id", QString::number(intUserIdTarget), true)->
+            InsertField("message", strText)->
+            InsertField("sent", QDateTime::fromTime_t(tsCreated).toString("yyyy-MM-dd hh:mm:ss"))->
+            InsertField("received", (transferred ? QDateTime::fromTime_t(tsCreated).toString("yyyy-MM-dd hh:mm:ss") : ""))->
             InsertField("transferred", transferred ? "1" : "0", true)->
-            InsertField("created", QDateTime::fromTime_t(tsCreated).toString("yyyy-MM-dd hh:mm:ss"))->
             toQuery();
 
     // exec query and return resulr
