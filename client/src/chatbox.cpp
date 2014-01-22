@@ -60,11 +60,18 @@ void ChatBox::showUserChatBox(Protocol::User *user)
     this->show();
 }
 
-void ChatBox::addMessage(QString text, Protocol::User* user, bool direction, quint32 timeStamp)
+void ChatBox::addMessage(QString text, int userId, bool direction, quint32 timeStamp)
 {
     // direction:
     // true --> Inbound
     // false --> Outbound
+
+    // get user object (if present localy, otherwise request it from server!)
+    if(!Global::mapCachedUsers.contains(userId)) {
+        // FIXME! implement user.get
+        return;
+    }
+    Protocol::User* user = Global::mapCachedUsers.value(userId);
 
     // if we have a message, and the chat window for the sending user doesn't exist, create it
     if(!this->mapUserIdChatForm.contains(user->id())) {
@@ -156,7 +163,7 @@ void ChatBox::chatTextChanged(int userId)
         Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_CHAT_PRIVATE, message.SerializeAsString());
 
         // add message
-        this->addMessage(strMessage, Global::mapCachedUsers.value(userId), false, QDateTime::currentDateTime().toTime_t());
+        this->addMessage(strMessage, userId, false, QDateTime::currentDateTime().toTime_t());
 
         // clear message
         chatForm->plainTextEditText->clear();
@@ -178,7 +185,7 @@ void ChatBox::handleInboundTextMessage(EleaphRpcPacket dataPacket)
     }
 
     // add message
-    return this->addMessage(QString::fromStdString(message.text()), message.mutable_usersender(), message.direction() == Protocol::MessagePrivateServer_Receiver_Target, message.timestamp());
+    return this->addMessage(QString::fromStdString(message.text()), message.userid(), message.direction() == Protocol::MessagePrivateServer_Receiver_Target, message.timestamp());
 }
 
 

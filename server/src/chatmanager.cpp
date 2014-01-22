@@ -40,30 +40,30 @@ void Chatmanager::handlePrivateChatMessage(EleaphRpcPacket dataPacket)
     Protocol::User* userSender = userManager->getConnectedUser(dataPacket.data()->ioPacketDevice);
     qint32 intUserIdReceiver = message.useridreceiver();
     quint32 intTimeStampCreated = QDateTime::currentMSecsSinceEpoch() / 1000;
-    bool boolTransfered = false;
 
-    // send Protocol::MessagePrivateServer-message to the target user (if he is logged in)
-    if(userManager->isLoggedIn(intUserIdReceiver)) {
-        Protocol::MessagePrivateServer messageForClient;
-        messageForClient.mutable_usersender()->MergeFrom(*userSender);
-        messageForClient.set_text(message.text());
-        messageForClient.set_timestamp(intTimeStampCreated);
+    // send Protocol::MessagePrivateServer-message to the session and target user (if he is logged in)
+    Protocol::MessagePrivateServer messageForClient;
+    messageForClient.set_text(message.text());
+    messageForClient.set_timestamp(intTimeStampCreated);
 
-        // Private Message --> Src User Sessions (if available)
-        messageForClient.set_direction(Protocol::MessagePrivateServer_Receiver_Session);
-        foreach(QIODevice *deviceSrcSession, userManager->getConnectedSessions(userSender->id())) {
-            // skip sending session (because session of course allready know the sent message :-))
-            if(deviceSrcSession == deviceUser) {
-                continue;
-            }
-            eleaphRpc->sendRPCDataPacket(deviceSrcSession, PACKET_DESCRIPTOR_CHAT_PRIVATE, messageForClient.SerializeAsString());
+    // Private Message --> Src User Sessions (if available)
+    messageForClient.set_direction(Protocol::MessagePrivateServer_Receiver_Session);
+    messageForClient.set_userid(intUserIdReceiver);
+    foreach(QIODevice *deviceSrcSession, userManager->getConnectedSessions(userSender->id())) {
+        // skip sending session (because session of course allready know the sent message :-))
+        if(deviceSrcSession == deviceUser) {
+            continue;
         }
+        eleaphRpc->sendRPCDataPacket(deviceSrcSession, PACKET_DESCRIPTOR_CHAT_PRIVATE, messageForClient.SerializeAsString());
+    }
 
-       // Private Message --> Target User Sessions (if available)
+    // Private Message --> Target User Sessions (if available)
+    bool boolTransfered = userManager->isLoggedIn(intUserIdReceiver);
+    if(boolTransfered) {
         messageForClient.set_direction(Protocol::MessagePrivateServer_Receiver_Target);
+        messageForClient.set_userid(userSender->id());
         foreach(QIODevice *deviceTargetUser, userManager->getConnectedSessions(intUserIdReceiver)) {
             eleaphRpc->sendRPCDataPacket(deviceTargetUser, PACKET_DESCRIPTOR_CHAT_PRIVATE, messageForClient.SerializeAsString());
-            boolTransfered = true;
         }
     }
 

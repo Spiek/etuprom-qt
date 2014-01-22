@@ -39,7 +39,7 @@ class ChatBox : public QMainWindow
     public slots:
         // Extern class accessor slots
         void showUserChatBox(Protocol::User *user);
-        void addMessage(QString text, Protocol::User* user, bool direction, quint32 timeStamp);
+        void addMessage(QString text, int userId, bool direction, quint32 timeStamp);
         void loadDesign(QString strDesign);
 
     private slots:
