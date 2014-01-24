@@ -15,6 +15,7 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 
     // some style improvings
     this->loadDesign("default");
+    this->setMinimumSize(this->size());
     this->setMaximumSize(this->size());
 
     // if error message was set, set error message
