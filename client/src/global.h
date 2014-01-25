@@ -16,6 +16,7 @@
 
 // Qt (network)
 #include <QtNetwork/QTcpSocket>
+#include <QtNetwork/QHostInfo>
 
 // own (collective)
 #include "EleaphProtoRpc"
@@ -30,6 +31,7 @@ class Global
         static quint16 intServerPort;
         static bool boolLoggedIn;
         static Protocol::User* user;
+        static QString strSessionName;
 
         // protocol implementations
         static QMap<qint32, Protocol::Contact*> mapContactList;
@@ -38,8 +40,8 @@ class Global
         static void initialize();
 
     private:
-	// settings
-	static QSettings *settings;
+        // settings
+        static QSettings *settings;
         static bool init;
 };
 

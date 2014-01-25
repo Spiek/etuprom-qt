@@ -49,7 +49,7 @@ void Chatmanager::handlePrivateChatMessage(EleaphRpcPacket dataPacket)
     // Private Message --> Src User Sessions (if available)
     messageForClient.set_direction(Protocol::MessagePrivateServer_Receiver_Session);
     messageForClient.set_userid(intUserIdReceiver);
-    foreach(QIODevice *deviceSrcSession, userManager->getConnectedSessions(userSender->id())) {
+    foreach(QIODevice *deviceSrcSession, userManager->getConnectedSessionSockets(userSender->id())) {
         // skip sending session (because session of course allready know the sent message :-))
         if(deviceSrcSession == deviceUser) {
             continue;
@@ -62,7 +62,7 @@ void Chatmanager::handlePrivateChatMessage(EleaphRpcPacket dataPacket)
     if(boolTransfered) {
         messageForClient.set_direction(Protocol::MessagePrivateServer_Receiver_Target);
         messageForClient.set_userid(userSender->id());
-        foreach(QIODevice *deviceTargetUser, userManager->getConnectedSessions(intUserIdReceiver)) {
+        foreach(QIODevice *deviceTargetUser, userManager->getConnectedSessionSockets(intUserIdReceiver)) {
             eleaphRpc->sendRPCDataPacket(deviceTargetUser, PACKET_DESCRIPTOR_CHAT_PRIVATE, messageForClient.SerializeAsString());
         }
     }

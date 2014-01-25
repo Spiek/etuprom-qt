@@ -10,7 +10,7 @@ Contactmanager::Contactmanager(EleaphProtoRPC *eleaphRPC, Usermanager *managerUs
     eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_GET_LIST, this, SLOT(handleContactList(EleaphRPCDataPacket*)));
 
     // connect all needed signals from other modules
-    this->connect(managerUser, SIGNAL(sigUserChanged(Usermanager::UserShared,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleContactChange(Usermanager::UserShared)));
+    this->connect(managerUser, SIGNAL(sigUserChanged(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleContactChange(Usermanager::SharedSession)));
 }
 
 void Contactmanager::handleContactList(EleaphRpcPacket dataPacket)
@@ -26,20 +26,28 @@ void Contactmanager::handleContactList(EleaphRpcPacket dataPacket)
 
     // get (if available) all contacts from logged in user and send the list to the logged in user, otherwise send empty packet
     Protocol::ContactList contactList;
-    if(databaseHelper->getContactsByUserId(user->id(), &contactList)) {
-        this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST, contactList.SerializeAsString());
-    } else {
-        this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST);
+
+    // add all user sessions as virtual users!
+    databaseHelper->getContactsByUserId(user->id(), &contactList);
+    foreach(QIODevice* deviceSession, this->managerUser->getConnectedSessionSockets(user->id())) {
+        Protocol::Contact *contact = contactList.add_contact();
+        contact->mutable_user()->MergeFrom(*user);
+        contact->mutable_user()->set_username(this->managerUser->getConnectedSession(deviceSession)->sessionname());
+        contact->set_group("Sessions");
     }
+
+
+    // send contactlist or if contactlist is empty, a simple empty content
+    this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_CONTACT_GET_LIST, contactList.contact_size() > 0 ? contactList.SerializeAsString() : "");
 }
 
-void Contactmanager::handleContactChange(Usermanager::UserShared userChanged)
+void Contactmanager::handleContactChange(Usermanager::SharedSession session)
 {
     // select all users from changed user's contact list which are online
     Protocol::Users users;
 
     // if no contact in contact list of changed user is online, don't inform anyone
-    if(!Global::getDatabaseHelper()->getAllOnlineContactsByUserId(userChanged.data()->id(), &users)) {
+    if(!Global::getDatabaseHelper()->getAllOnlineContactsByUserId(session.data()->mutable_user()->id(), &users)) {
         return;
     }
 
@@ -49,8 +57,8 @@ void Contactmanager::handleContactChange(Usermanager::UserShared userChanged)
         qint32 intUserIdOfUserToInform = users.mutable_user(i)->id();
 
         // inform all sessions of online "contact list"-users about the user change
-        foreach(QIODevice *deviceOfUserToInform, this->managerUser->getConnectedSessions(intUserIdOfUserToInform)) {
-            this->eleaphRPC->sendRPCDataPacket(deviceOfUserToInform, PACKET_DESCRIPTOR_CONTACT_ALTERED, userChanged.data()->SerializeAsString());
+        foreach(QIODevice *deviceOfUserToInform, this->managerUser->getConnectedSessionSockets(intUserIdOfUserToInform)) {
+            this->eleaphRPC->sendRPCDataPacket(deviceOfUserToInform, PACKET_DESCRIPTOR_CONTACT_ALTERED, session.data()->SerializeAsString());
         }
     }
 }

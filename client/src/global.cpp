@@ -20,6 +20,8 @@ QSettings* Global::settings = 0;
 QString Global::strServerHostname = "localhost";
 quint16 Global::intServerPort = 1234;
 
+QString Global::strSessionName = QHostInfo::localHostName();
+
 void Global::initialize()
 {
     // stop init process and exit if the class was allready initialized
@@ -41,6 +43,7 @@ void Global::initialize()
 
     Global::strServerHostname = Global::settings->value("server/hostname", Global::strServerHostname).toString();
     Global::intServerPort = Global::settings->value("server/port", Global::intServerPort).toUInt();
+    Global::strSessionName = Global::settings->value("session/name", Global::strSessionName).toString();
 
 
     // init socket

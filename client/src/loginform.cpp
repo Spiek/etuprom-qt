@@ -17,6 +17,7 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     this->loadDesign("default");
     this->setMinimumSize(this->size());
     this->setMaximumSize(this->size());
+    this->ui->lineEditSession->setText(Global::strSessionName);
 
     // if error message was set, set error message
     if(!strErrorMessage.isEmpty()) {
@@ -34,9 +35,12 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     // signal --> slot connections (Gui)
     this->connect(this->ui->lineEditLogin, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
     this->connect(this->ui->lineEditPassword, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
+    this->connect(this->ui->lineEditSession, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
 
     this->connect(this->ui->lineEditLogin, SIGNAL(returnPressed()), this, SLOT(login()));
     this->connect(this->ui->lineEditPassword, SIGNAL(returnPressed()), this, SLOT(login()));
+    this->connect(this->ui->lineEditSession, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
+
     this->connect(this->ui->pushButtonLogin, SIGNAL(clicked()), this, SLOT(login()));
 
     // connect to server
@@ -98,9 +102,11 @@ void LoginForm::serverDisconnected()
     QTimer::singleShot(3000, this, SLOT(connectToServer()));
 }
 
+
 //
 // Style
 //
+
 void LoginForm::loadDesign(QString strDesign)
 {
     // set stylesheet
@@ -109,21 +115,22 @@ void LoginForm::loadDesign(QString strDesign)
     this->ui->centralwidget->setStyleSheet(file.readAll());
 }
 
+
 //
 // Login
 //
 
 bool LoginForm::loginValidator()
 {
-    // disable the login button if username or password was not typed in
-    if(this->ui->lineEditLogin->text().isEmpty() || this->ui->lineEditPassword->text().isEmpty()) {
-        this->ui->pushButtonLogin->setEnabled(false);
-        return false;
-    }
+    // not valid if the username or password or session was not typed in
+    bool isValid =  !(
+                        this->ui->lineEditLogin->text().isEmpty() ||
+                        this->ui->lineEditPassword->text().isEmpty() ||
+                        this->ui->lineEditSession->text().isEmpty()
+                    );
 
-    // if username and pw was typed in, enable login button
-    this->ui->pushButtonLogin->setEnabled(true);
-    return true;
+    this->ui->pushButtonLogin->setEnabled(isValid);
+    return isValid;
 }
 
 void LoginForm::login()
@@ -139,6 +146,7 @@ void LoginForm::login()
     requestLogin.set_username(this->ui->lineEditLogin->text().toStdString());
     QByteArray baPasswordHash = QCryptographicHash::hash(this->ui->lineEditPassword->text().toUtf8(), QCryptographicHash::Sha1).toHex();
     requestLogin.set_password(baPasswordHash.data());
+    requestLogin.set_sessionname(this->ui->lineEditSession->text().toStdString());
 
     // ... and send constructed protobuf packet to the server
     Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_USER_LOGIN, requestLogin.SerializeAsString());

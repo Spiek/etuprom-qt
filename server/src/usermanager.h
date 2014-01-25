@@ -28,7 +28,7 @@ class Usermanager : public QObject
 {
     Q_OBJECT
     public:
-        typedef QSharedPointer<Protocol::User> UserShared;
+        typedef QSharedPointer<Protocol::Session> SharedSession;
 
         // UserChangeType
         // - represent the state of the User
@@ -48,7 +48,7 @@ class Usermanager : public QObject
         };
 
     signals:
-        void sigUserChanged(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);
+        void sigUserChanged(Usermanager::SharedSession userSession, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);
 
     public:
         // Con and decon
@@ -56,13 +56,14 @@ class Usermanager : public QObject
         ~Usermanager();
 
         // External user managment helper methods
-        void addUserSession(QIODevice *device, Protocol::User *user);
+        void addUserSession(QIODevice *device, Protocol::Session *session);
         void removeUserSession(QIODevice *device);
         bool isLoggedIn(QIODevice *device);
         bool isLoggedIn(qint32 userID);
-        Protocol::User* getConnectedUser(QIODevice *device);
-        Protocol::User* getConnectedUser(qint32 userid);
-        QList<QIODevice*> getConnectedSessions(qint32 userid);
+        Protocol::Session*                     getConnectedSession(QIODevice *device);
+        QList<Protocol::Session*>              getConnectedSessions(qint32 userid);
+        QList<QIODevice*>                      getConnectedSessionSockets(qint32 userid);
+        Protocol::User*                        getConnectedUser(QIODevice *device);
 
         // Settings setter/getter
         void setSettingsActivateMultiSessions(bool enabled);
@@ -70,8 +71,8 @@ class Usermanager : public QObject
 
     private:
         // Internal user store
-        QMap<QIODevice*, Protocol::User*> mapSocketsUser;
-        QMap<qint32, QMap<QIODevice*, Protocol::User*>* > mapUsersSessions;
+        QMap<QIODevice*, Protocol::Session*> mapSocketsSession;
+        QMap<qint32, QMap<QIODevice*, Protocol::Session*>* > mapUsersSessions;
         EleaphProtoRPC* eleaphRPC;
 
         // Settings
@@ -87,7 +88,7 @@ class Usermanager : public QObject
         void handleClientDisconnect(QIODevice *device);
 
         // Helper functions
-        void handleUserChange(Usermanager::UserShared userChanged, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);
+        void handleUserChange(Usermanager::SharedSession session, QIODevice *deviceProducerOfChange, Usermanager::UserChangeType changeType);
 };
 
 #endif // USERMANAGER_H

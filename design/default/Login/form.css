@@ -41,6 +41,10 @@ QLineEdit {
 	border-radius: 10px;
 }
 
+QLineEdit#lineEditSession {
+	padding: 10px 25px;
+}
+
 QLineEdit:hover {
 	background: #dfe9ec;
 	color: #414848;

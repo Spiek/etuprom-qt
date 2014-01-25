@@ -5,6 +5,7 @@ message LoginRequest
 {
 	required string username = 1;
 	required string password = 2;
+	required string sessionName = 3;
 }
 
 message LoginResponse
@@ -24,6 +25,12 @@ message User
 	required int32 state = 3;
 	required bool online = 4;
 	required bool visible = 5;
+}
+
+message Session
+{
+	required User user = 1;
+	required string sessionName = 2;
 }
 
 message ContactList
