@@ -56,11 +56,14 @@ void Usermanager::addUserSession(QIODevice *device, Protocol::Session* session)
         this->mapUsersSessions.insert(user->id(), new QMap<QIODevice*, Protocol::Session*>());
     }
 
-    // create new Session, and save it for later use
+    // ...and save session for later use
     this->mapUsersSessions.value(user->id())->insert(device, session);
     this->mapSocketsSession.insert(device, session);
 
-    // ... and inform the outside world (will use a QSharedPointer version of a copy of the user object, so that we have a automatic garbage collection!)
+    // Inform the outside world
+    // will use a QSharedPointer version of a copy of the session object
+    // so that we have a automatic garbage collection
+    // and the protection of internal Usermanager objects
     Protocol::Session *newSession = new Protocol::Session(*session);
     emit this->sigUserChanged(Usermanager::SharedSession(newSession), device, userChangeType);
 }
@@ -72,29 +75,31 @@ void Usermanager::removeUserSession(QIODevice *device)
         return;
     }
 
-    // take session from mapSocketUser
+    // take session and user
     Protocol::Session *session = this->mapSocketsSession.take(device);
     Protocol::User *user = session->mutable_user();
 
-    // remove session from mapUserSessions
+    // remove One session from mapUserSessions
     QMap<QIODevice*, Protocol::Session*>* mapUserSession = this->mapUsersSessions.value(user->id());
     mapUserSession->remove(device);
 
-    // if the last session was taken, so kill the whole user (including mapUserSession instance)
+    // if the last session was taken, so kill the session and whole user-session-map
     Usermanager::UserChangeType userChangeType = Usermanager::UserChangeType::UserSessionRemoved;
     if(mapUserSession->isEmpty()) {
-        // clean wholee mapUsersSessions map for userid
+        // clean whole mapUsersSessions map for userid
         this->mapUsersSessions.take(user->id());
 
-        // generate correct userChangeType
+        // add UserRemoved to change type
         userChangeType = (Usermanager::UserChangeType)((quint8)userChangeType | (quint8)Usermanager::UserChangeType::UserRemoved);
 
-        // remove the mapuserSession "case"
+        // remove the user-session-map
         delete mapUserSession;
     }
 
-    // inform the outside world (will use a QSharedPointer version of a copy of the user object, so that we have a automatic garbage collection!)
-    this->sigUserChanged(Usermanager::SharedSession(session), device, userChangeType);
+    // Inform the outside world
+    // will use a QSharedPointer version of the session object
+    // so that we have an automatic garbage collection after all connected slots are called
+    emit this->sigUserChanged(Usermanager::SharedSession(session), device, userChangeType);
 }
 
 bool Usermanager::isLoggedIn(QIODevice *device)
@@ -110,7 +115,7 @@ bool Usermanager::isLoggedIn(qint32 userID)
 
 Protocol::Session* Usermanager::getConnectedSession(QIODevice *device)
 {
-    return (this->mapSocketsSession.value(device, (Protocol::Session*)0));
+    return this->mapSocketsSession.value(device, (Protocol::Session*)0);
 }
 
 QList<Protocol::Session*> Usermanager::getConnectedSessions(qint32 userid)
@@ -128,7 +133,7 @@ QList<QIODevice*> Usermanager::getConnectedSessionSockets(qint32 userid)
 Protocol::User* Usermanager::getConnectedUser(QIODevice *device)
 {
     Protocol::Session *session = this->getConnectedSession(device);
-    return (session ? session->mutable_user() : (Protocol::User*)0);
+    return session ? session->mutable_user() : (Protocol::User*)0;
 }
 
 
@@ -167,25 +172,36 @@ void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
     Protocol::User *user = session->mutable_user();
     session->set_sessionname(request.sessionname());
 
-    // inform the client if the user was found, or not
+    // if login data are not correct, so inform client by setting type to LoginResponse_Type_LoginIncorect
     Protocol::LoginResponse response;
     if(!Global::getDatabaseHelper()->getUserByIdUserNameAndPw(strUsername, strPassword, user)) {
         response.set_type(Protocol::LoginResponse_Type_LoginIncorect);
-    } else if(this->boolSettingsMultiSessionsActive || !this->isLoggedIn(user->id())) {
-        response.set_type(Protocol::LoginResponse_Type_Success);
-    }  else {
-        response.set_type(Protocol::LoginResponse_Type_AllreadyLoggedIn);
     }
-    this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
 
-    // if login wasn't successfull, delte constructed user and end here
+    // otherwise if "multi Sessions are not allowed" AND "user is allready logged in", so inform client by setting type to LoginResponse_Type_AllreadyLoggedIn
+    else if(!this->boolSettingsMultiSessionsActive && this->isLoggedIn(user->id())) {
+        response.set_type(Protocol::LoginResponse_Type_AllreadyLoggedIn);
+
+    }
+
+    // otherwise we have a successfull login so we inform client by setting type to LoginResponse_Type_Success
+    else {
+        response.set_type(Protocol::LoginResponse_Type_Success);
+    }
+
+    // of course if login wasn't successfull, delete the constructed session
     if(response.type() != Protocol::LoginResponse_Type_Success) {
         delete session;
         return;
     }
 
-    // add user to the usermanager
-    this->addUserSession(dataPacket.data()->ioPacketDevice, session);
+    // otherwise log user in
+    else {
+        this->addUserSession(dataPacket.data()->ioPacketDevice, session);
+    }
+
+    // send login response to client
+    this->eleaphRPC->sendRPCDataPacket(dataPacket.data()->ioPacketDevice, PACKET_DESCRIPTOR_USER_LOGIN, response.SerializeAsString());
 }
 
 void Usermanager::handleLogout(EleaphRpcPacket dataPacket)
