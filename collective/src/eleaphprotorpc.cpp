@@ -18,8 +18,28 @@ EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph
 /*
  * registerRPCMethod - register RPC Method for Async DataPacket handling
  */
-void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot)
+void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot,
+                                       EleaphProcessEvent event0,
+                                       EleaphProcessEvent event1,
+                                       EleaphProcessEvent event2,
+                                       EleaphProcessEvent event3,
+                                       EleaphProcessEvent event4,
+                                       EleaphProcessEvent event5,
+                                       EleaphProcessEvent event6,
+                                       EleaphProcessEvent event7)
+
 {
+    // move all events to list
+    QList<EleaphProcessEvent> events;
+    if(event0.type != EleaphProcessEvent::Type::Invalid) events.append(event0);
+    if(event1.type != EleaphProcessEvent::Type::Invalid) events.append(event1);
+    if(event2.type != EleaphProcessEvent::Type::Invalid) events.append(event2);
+    if(event3.type != EleaphProcessEvent::Type::Invalid) events.append(event3);
+    if(event4.type != EleaphProcessEvent::Type::Invalid) events.append(event4);
+    if(event5.type != EleaphProcessEvent::Type::Invalid) events.append(event5);
+    if(event6.type != EleaphProcessEvent::Type::Invalid) events.append(event6);
+    if(event7.type != EleaphProcessEvent::Type::Invalid) events.append(event7);
+
     // normalize method
     QByteArray methodNormalized = this->extractMethodName(member);
 
@@ -28,6 +48,8 @@ void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
     delegate->object = receiver;
     delegate->method = methodNormalized;
     delegate->singleShot = singleShot;
+    delegate->additionalEventHandler = new EleaphProcessEventHandler(events);
+    delegate->additionalEventHandler->moveToThread(receiver->thread());
 
     // if receiver was destroyed, remove it's rpc methods
     this->connect(receiver, SIGNAL(destroyed()), this, SLOT(unregisterRPCObject()));
@@ -160,18 +182,8 @@ void EleaphProtoRPC::newDataPacketReceived(EleaphPacketData *dataPacket)
 
     // ... loop all delegates which are registered for strMethodName, and invoke them one by one
     foreach(EleaphProtoRPC::Delegate *delegate, this->mapRPCFunctions.values(strMethodName)) {
-        // simplefy the delegate
-        QObject* object = delegate->object;
-        QByteArray method = delegate->method;
-
-        // call delegate
-        QMetaObject::invokeMethod(object, method.constData(), Q_ARG(EleaphRpcPacket, watcher));
-
-        // if we have a single shot procedure connection, remove the delegate from RPCFunction list
-        if(delegate->singleShot) {
-            this->mapRPCFunctions.remove(strMethodName, delegate);
-            delete delegate;
-        }
+        // let the EleaphAdditionalEventHandler do the rest (int the event loop of the receivers thread!)
+        emit delegate->additionalEventHandler->processPacket(delegate, watcher);
     }
 }
 

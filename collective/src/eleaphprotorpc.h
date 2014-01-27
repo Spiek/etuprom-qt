@@ -16,6 +16,9 @@
 #include <QtCore/QEventLoop>
 #include <QtCore/QSharedPointer>
 
+// forward declarations
+class EleaphProcessEventHandler;
+
 struct ElaphRpcPacketData : EleaphPacketData
 {
     QString strMethodName;
@@ -24,6 +27,30 @@ struct ElaphRpcPacketData : EleaphPacketData
 typedef QSharedPointer<ElaphRpcPacketData> EleaphRpcPacket;
 
 
+class EleaphProcessEvent
+{
+    public:
+        enum class Type {
+            Invalid = 0,
+            Before = 1,
+            After = 2
+        };
+        inline EleaphProcessEvent(QObject* receiver = 0, EleaphProcessEvent::Type type = EleaphProcessEvent::Type::Invalid) { this->receiver = receiver; this->type = type; }
+        EleaphProcessEvent::Type type;
+        QObject* receiver;
+
+   friend class EleaphProcessEventHandler;
+};
+
+class EleaphProcessEvent_Before : EleaphProcessEvent {
+    public:
+        EleaphProcessEvent_Before(QObject* receiver) : EleaphProcessEvent(receiver, EleaphProcessEvent::Type::Before) { }
+};
+
+class EleaphProcessEvent_After : EleaphProcessEvent {
+    public:
+        EleaphProcessEvent_After(QObject* receiver) : EleaphProcessEvent(receiver, EleaphProcessEvent::Type::After) { }
+};
 
 class EleaphProtoRPC : public IEleaph
 {
@@ -38,6 +65,7 @@ class EleaphProtoRPC : public IEleaph
         {
             QObject* object;
             QByteArray method;
+            EleaphProcessEventHandler* additionalEventHandler;
             bool singleShot;
         };
 
@@ -49,7 +77,7 @@ class EleaphProtoRPC : public IEleaph
         //
 
         // register/unregister
-        void registerRPCMethod(QString strMethod, QObject* receiver, const char *member, bool singleShot = false);
+        void registerRPCMethod(QString strMethod, QObject* receiver, const char *member, bool singleShot = false, EleaphProcessEvent event0 = EleaphProcessEvent(), EleaphProcessEvent event1 = EleaphProcessEvent(), EleaphProcessEvent event2 = EleaphProcessEvent(), EleaphProcessEvent event3 = EleaphProcessEvent(), EleaphProcessEvent event4 = EleaphProcessEvent(), EleaphProcessEvent event5 = EleaphProcessEvent(), EleaphProcessEvent event6 = EleaphProcessEvent(), EleaphProcessEvent event7 = EleaphProcessEvent());
         void unregisterRPCMethod(QString strMethod, QObject* receiver = 0, const char *member = 0);
         void unregisterRPCMethod(QObject* receiver, const char *member = 0);
 
@@ -76,6 +104,65 @@ class EleaphProtoRPC : public IEleaph
 
         // helper methods
         QByteArray extractMethodName(const char* method);
+};
+
+
+class EleaphProcessEventHandler : public QObject
+{
+    Q_OBJECT
+    public:
+        EleaphProcessEventHandler(QList<EleaphProcessEvent> events) { this->lstEvents = events; }
+
+    public slots:
+        void processPacket(EleaphProtoRPC::Delegate* delegate, EleaphRpcPacket packet)
+        {
+            // process all "beforePacketProcess" Events, if one event result with false, abort packet process
+            if(!this->processEvent(delegate, packet, EleaphProcessEvent::Type::Before)) {
+                return;
+            }
+
+            // simplefy the delegate
+            QObject* object = delegate->object;
+            QByteArray method = delegate->method;
+
+            // call delegate syncronly (because we are in the receiver thread)
+            QMetaObject::invokeMethod(object, method.constData(), Qt::DirectConnection, Q_ARG(EleaphRpcPacket, packet));
+
+            // process all "afterPacketProcess" Events
+            this->processEvent(delegate, packet, EleaphProcessEvent::Type::After);
+        }
+
+    private:
+        QList<EleaphProcessEvent> lstEvents;
+
+        bool processEvent(EleaphProtoRPC::Delegate* delegate, EleaphRpcPacket packet, EleaphProcessEvent::Type type)
+        {
+            // so let us loop all events
+            foreach(EleaphProcessEvent event, this->lstEvents) {
+                // only process needed events and valid ones
+                if(event.type == EleaphProcessEvent::Type::Invalid || event.type != type) {
+                    continue;
+                }
+
+                // simplefy objects
+                QObject* object = event.receiver;
+                const QMetaObject* metaObject = object->metaObject();
+
+                QString strEventMethodName = type == EleaphProcessEvent::Type::Before ? "beforePacketProcessed" : "afterPacketProcessed";
+                if(metaObject->indexOfMethod(strEventMethodName.toStdString().c_str()) != -1) {
+                    bool continueProcess = true;
+                    QMetaObject::invokeMethod(object, strEventMethodName.toStdString().c_str(), Qt::DirectConnection, Q_ARG(EleaphProtoRPC::Delegate*, delegate), Q_ARG(EleaphRpcPacket, packet), Q_ARG(bool*, &continueProcess));
+
+                    // don't continue process the packet!
+                    if(!continueProcess) {
+                        return false;
+                    }
+                }
+            }
+
+            // process event
+            return true;
+        }
 };
 
 class ElepahAsyncPacketWaiter : public QObject
