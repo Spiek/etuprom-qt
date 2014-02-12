@@ -111,7 +111,12 @@ class EleaphProcessEventHandler : public QObject
 {
     Q_OBJECT
     public:
-        EleaphProcessEventHandler(QList<EleaphProcessEvent> events) { this->lstEvents = events; }
+        enum class EventResult {
+            Ok = 0,
+            Ignore = 1,
+            ProtocolViolation = 2
+        };
+        EleaphProcessEventHandler(QList<EleaphProcessEvent> events) { this->lstEvents = events; qRegisterMetaType<EleaphProcessEventHandler::EventResult>("EventResult"); }
 
     public slots:
         void processPacket(EleaphProtoRPC::Delegate* delegate, EleaphRpcPacket packet)
@@ -149,18 +154,35 @@ class EleaphProcessEventHandler : public QObject
                 const QMetaObject* metaObject = object->metaObject();
 
                 QString strEventMethodName = type == EleaphProcessEvent::Type::Before ? "beforePacketProcessed" : "afterPacketProcessed";
-                if(metaObject->indexOfMethod(QMetaObject::normalizedSignature((strEventMethodName + "(EleaphProtoRPC::Delegate*,EleaphRpcPacket,bool*)").toStdString().c_str())) != -1) {
-                    bool continueProcess = true;
-                    QMetaObject::invokeMethod(object, strEventMethodName.toStdString().c_str(), Qt::DirectConnection, Q_ARG(EleaphProtoRPC::Delegate*, delegate), Q_ARG(EleaphRpcPacket, packet), Q_ARG(bool*, &continueProcess));
+                if(metaObject->indexOfMethod(QMetaObject::normalizedSignature((strEventMethodName + "(EleaphProtoRPC::Delegate*,EleaphRpcPacket,EleaphProcessEventHandler::EventResult*)").toStdString().c_str())) != -1) {
+                    EventResult eventResult = EventResult::Ok;
+                    QMetaObject::invokeMethod(object, strEventMethodName.toStdString().c_str(), Qt::DirectConnection, Q_ARG(EleaphProtoRPC::Delegate*, delegate), Q_ARG(EleaphRpcPacket, packet), Q_ARG(EleaphProcessEventHandler::EventResult*, &eventResult));
 
-                    // don't continue process the packet!
-                    if(!continueProcess) {
+                    // if event handler Results with false, ignore package
+                    if(!this->handleEventResult(eventResult, packet)) {
                         return false;
                     }
                 }
             }
 
             // process event
+            return true;
+        }
+
+        bool handleEventResult(EventResult eventResult, EleaphRpcPacket packet)
+        {
+            // just ignore packet
+            if(eventResult == EventResult::Ignore) {
+                return false;
+            }
+
+            // kill peer on protocol violation and ignore package
+            else if(eventResult == EventResult::ProtocolViolation) {
+                packet.data()->ioPacketDevice->deleteLater();
+                return false;
+            }
+
+            // ... otherwise everything is okay
             return true;
         }
 };
