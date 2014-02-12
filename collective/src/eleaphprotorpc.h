@@ -77,7 +77,7 @@ class EleaphProtoRPC : public IEleaph
         //
 
         // register/unregister
-        bool registerRPCMethod(QString strMethod, QObject* receiver, const char *member, bool singleShot = false, EleaphProcessEvent event0 = EleaphProcessEvent(), EleaphProcessEvent event1 = EleaphProcessEvent(), EleaphProcessEvent event2 = EleaphProcessEvent(), EleaphProcessEvent event3 = EleaphProcessEvent(), EleaphProcessEvent event4 = EleaphProcessEvent(), EleaphProcessEvent event5 = EleaphProcessEvent(), EleaphProcessEvent event6 = EleaphProcessEvent(), EleaphProcessEvent event7 = EleaphProcessEvent());
+        void registerRPCMethod(QString strMethod, QObject* receiver, const char *member, bool singleShot = false, EleaphProcessEvent event0 = EleaphProcessEvent(), EleaphProcessEvent event1 = EleaphProcessEvent(), EleaphProcessEvent event2 = EleaphProcessEvent(), EleaphProcessEvent event3 = EleaphProcessEvent(), EleaphProcessEvent event4 = EleaphProcessEvent(), EleaphProcessEvent event5 = EleaphProcessEvent(), EleaphProcessEvent event6 = EleaphProcessEvent(), EleaphProcessEvent event7 = EleaphProcessEvent());
         void unregisterRPCMethod(QString strMethod, QObject* receiver = 0, const char *member = 0);
         void unregisterRPCMethod(QObject* receiver, const char *member = 0);
 

@@ -18,7 +18,7 @@ EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph
 /*
  * registerRPCMethod - register RPC Method for Async DataPacket handling
  */
-bool EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot,
+void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot,
                                        EleaphProcessEvent event0,
                                        EleaphProcessEvent event1,
                                        EleaphProcessEvent event2,
@@ -41,17 +41,19 @@ bool EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
     if(event7.type != EleaphProcessEvent::Type::Invalid) events.append(event7);
 
     // event thread check
-    // every event have to be in the same thread as receiver object thread, if not we cannot call Events Syncronly, so exit here!
-    foreach(EleaphProcessEvent event, events) {
+    // every event have to be in the same thread as receiver object thread, if not we cannot call Events Syncronly, so remove event!
+    for(int i = 0;i < events.length(); i++) {
+        EleaphProcessEvent event = events.at(i);
         if(event.receiver->thread() != receiver->thread()) {
-            qCritical("[%s %s::%s line:%i] Receiver object of EleaphProcessEvent is not in the receivers Thread of registered method by registering \"%s\" method!",
+            qWarning("[%s %s::%s line:%i] Event-Receiver-Object of EleaphProcessEvent is not in the receivers Thread, \"%s\" event of \"%s\" method will not be processed!",
                      __FILE__,
                      typeid(*this).name(),
                      __func__ ,
                      __LINE__,
+                     event.type == EleaphProcessEvent::Type::Before ? "before" : "after",
                      qPrintable(strMethod)
                      );
-            return false;
+            events.removeAt(i);
         }
     }
 
@@ -71,9 +73,6 @@ bool EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
 
     // ... and save the informations
     this->mapRPCFunctions.insertMulti(strMethod, delegate);
-
-    // so everything look fine...
-    return true;
 }
 
 void EleaphProtoRPC::unregisterRPCMethod(QString strMethod, QObject *receiver, const char *member)
