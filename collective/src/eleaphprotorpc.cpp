@@ -18,7 +18,7 @@ EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph
 /*
  * registerRPCMethod - register RPC Method for Async DataPacket handling
  */
-void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot,
+bool EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot,
                                        EleaphProcessEvent event0,
                                        EleaphProcessEvent event1,
                                        EleaphProcessEvent event2,
@@ -40,6 +40,21 @@ void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
     if(event6.type != EleaphProcessEvent::Type::Invalid) events.append(event6);
     if(event7.type != EleaphProcessEvent::Type::Invalid) events.append(event7);
 
+    // event thread check
+    // every event have to be in the same thread as receiver object thread, if not we cannot call Events Syncronly, so exit here!
+    foreach(EleaphProcessEvent event, events) {
+        if(event.receiver->thread() != receiver->thread()) {
+            qCritical("[%s %s::%s line:%i] Receiver object of EleaphProcessEvent is not in the receivers Thread of registered method by registering \"%s\" method!",
+                     __FILE__,
+                     typeid(*this).name(),
+                     __func__ ,
+                     __LINE__,
+                     qPrintable(strMethod)
+                     );
+            return false;
+        }
+    }
+
     // normalize method
     QByteArray methodNormalized = this->extractMethodName(member);
 
@@ -56,6 +71,9 @@ void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
 
     // ... and save the informations
     this->mapRPCFunctions.insertMulti(strMethod, delegate);
+
+    // so everything look fine...
+    return true;
 }
 
 void EleaphProtoRPC::unregisterRPCMethod(QString strMethod, QObject *receiver, const char *member)

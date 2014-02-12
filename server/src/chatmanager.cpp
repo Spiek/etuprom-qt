@@ -13,7 +13,7 @@ Chatmanager::Chatmanager(EleaphProtoRPC *eleaphRpc, Usermanager* managerUser, QO
     this->managerUser = managerUser;
 
     // protocol handlers
-    this->eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CHAT_PRIVATE, this, SLOT(handlePrivateChatMessage(EleaphRPCDataPacket*)));
+    this->eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CHAT_PRIVATE, this, SLOT(handlePrivateChatMessage(EleaphRPCDataPacket*)), false, EleaphProcessEvent_Before(managerUser));
 }
 
 void Chatmanager::handlePrivateChatMessage(EleaphRpcPacket dataPacket)

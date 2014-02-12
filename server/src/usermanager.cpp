@@ -20,8 +20,8 @@ Usermanager::Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent) : QObject(p
     // protocol handlers
     this->connect(eleaphRPC, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handleClientDisconnect(QIODevice*)));
     eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRpcPacket)));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)), false, EleaphProcessEvent_Before(this));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)), false, EleaphProcessEvent_Before(this));
 
     // signal connections (this)
     this->connect(this, SIGNAL(sigUserChanged(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleUserChange(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)));
@@ -149,6 +149,18 @@ void Usermanager::setSettingsActivateMultiSessions(bool enabled)
 bool Usermanager::getSettingsActivateMultiSession()
 {
     return this->boolSettingsMultiSessionsActive;
+}
+
+
+//
+// Post packet handling
+//
+
+void Usermanager::beforePacketProcessed(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, bool* continueProcess)
+{
+    // do a login check
+    Q_UNUSED(delegate);
+    *continueProcess = this->isLoggedIn(packet.data()->ioPacketDevice);
 }
 
 

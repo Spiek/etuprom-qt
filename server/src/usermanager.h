@@ -79,6 +79,9 @@ class Usermanager : public QObject
         bool boolSettingsMultiSessionsActive;
 
     private slots:
+        // Post packet handling
+        void beforePacketProcessed(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, bool* continueProcess);
+
         // Packet Event handlers
         void handleLogin(EleaphRpcPacket dataPacket);
         void handleLogout(EleaphRpcPacket dataPacket);
