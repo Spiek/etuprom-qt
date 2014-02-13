@@ -19,12 +19,12 @@
 // forward declarations
 class EleaphRpcPacketHandler;
 
-struct ElaphRpcPacket : EleaphPacket
+struct ElaphRpcPacketData : EleaphPacket
 {
     QString strMethodName;
 };
 
-typedef QSharedPointer<ElaphRpcPacket> EleaphRpcPacket;
+typedef QSharedPointer<ElaphRpcPacketData> EleaphRpcPacket;
 
 
 class EleaphRpcPacketMetaEvent
