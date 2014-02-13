@@ -19,12 +19,12 @@
 // forward declarations
 class EleaphProcessEventHandler;
 
-struct ElaphRpcPacketData : EleaphPacket
+struct ElaphRpcPacket : EleaphPacket
 {
     QString strMethodName;
 };
 
-typedef QSharedPointer<ElaphRpcPacketData> EleaphRpcPacket;
+typedef QSharedPointer<ElaphRpcPacket> EleaphRpcPacket;
 
 
 class EleaphProcessEvent
