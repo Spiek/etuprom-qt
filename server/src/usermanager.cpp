@@ -156,11 +156,11 @@ bool Usermanager::getSettingsActivateMultiSession()
 // Post packet handling
 //
 
-void Usermanager::beforePacketProcessed(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketMetaEventHandler::EventResult* eventResult)
+void Usermanager::beforePacketProcessed(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketHandler::EventResult* eventResult)
 {
     // do a login check
     Q_UNUSED(delegate);
-    *eventResult = this->isLoggedIn(packet.data()->ioPacketDevice) ? EleaphRpcPacketMetaEventHandler::EventResult::Ok : EleaphRpcPacketMetaEventHandler::EventResult::ProtocolViolation;
+    *eventResult = this->isLoggedIn(packet.data()->ioPacketDevice) ? EleaphRpcPacketHandler::EventResult::Ok : EleaphRpcPacketHandler::EventResult::ProtocolViolation;
 }
 
 

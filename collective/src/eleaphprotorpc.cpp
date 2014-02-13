@@ -65,7 +65,7 @@ void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
     delegate->object = receiver;
     delegate->method = methodNormalized;
     delegate->singleShot = singleShot;
-    delegate->additionalEventHandler = new EleaphRpcPacketMetaEventHandler(events);
+    delegate->additionalEventHandler = new EleaphRpcPacketHandler(events);
     delegate->additionalEventHandler->moveToThread(receiver->thread());
 
     // if receiver was destroyed, remove it's rpc methods
