@@ -19,38 +19,38 @@ EleaphProtoRPC::EleaphProtoRPC(QObject *parent, quint32 maxDataLength) : IEleaph
  * registerRPCMethod - register RPC Method for Async DataPacket handling
  */
 void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, const char *member, bool singleShot,
-                                       EleaphProcessEvent event0,
-                                       EleaphProcessEvent event1,
-                                       EleaphProcessEvent event2,
-                                       EleaphProcessEvent event3,
-                                       EleaphProcessEvent event4,
-                                       EleaphProcessEvent event5,
-                                       EleaphProcessEvent event6,
-                                       EleaphProcessEvent event7)
+                                       EleaphRpcPacketMetaEvent event0,
+                                       EleaphRpcPacketMetaEvent event1,
+                                       EleaphRpcPacketMetaEvent event2,
+                                       EleaphRpcPacketMetaEvent event3,
+                                       EleaphRpcPacketMetaEvent event4,
+                                       EleaphRpcPacketMetaEvent event5,
+                                       EleaphRpcPacketMetaEvent event6,
+                                       EleaphRpcPacketMetaEvent event7)
 
 {
     // move all events to list
-    QList<EleaphProcessEvent> events;
-    if(event0.type != EleaphProcessEvent::Type::Invalid) events.append(event0);
-    if(event1.type != EleaphProcessEvent::Type::Invalid) events.append(event1);
-    if(event2.type != EleaphProcessEvent::Type::Invalid) events.append(event2);
-    if(event3.type != EleaphProcessEvent::Type::Invalid) events.append(event3);
-    if(event4.type != EleaphProcessEvent::Type::Invalid) events.append(event4);
-    if(event5.type != EleaphProcessEvent::Type::Invalid) events.append(event5);
-    if(event6.type != EleaphProcessEvent::Type::Invalid) events.append(event6);
-    if(event7.type != EleaphProcessEvent::Type::Invalid) events.append(event7);
+    QList<EleaphRpcPacketMetaEvent> events;
+    if(event0.type != EleaphRpcPacketMetaEvent::Type::Invalid) events.append(event0);
+    if(event1.type != EleaphRpcPacketMetaEvent::Type::Invalid) events.append(event1);
+    if(event2.type != EleaphRpcPacketMetaEvent::Type::Invalid) events.append(event2);
+    if(event3.type != EleaphRpcPacketMetaEvent::Type::Invalid) events.append(event3);
+    if(event4.type != EleaphRpcPacketMetaEvent::Type::Invalid) events.append(event4);
+    if(event5.type != EleaphRpcPacketMetaEvent::Type::Invalid) events.append(event5);
+    if(event6.type != EleaphRpcPacketMetaEvent::Type::Invalid) events.append(event6);
+    if(event7.type != EleaphRpcPacketMetaEvent::Type::Invalid) events.append(event7);
 
     // event thread check
     // every event have to be in the same thread as receiver object thread, if not we cannot call Events Syncronly, so remove event!
     for(int i = 0;i < events.length(); i++) {
-        EleaphProcessEvent event = events.at(i);
+        EleaphRpcPacketMetaEvent event = events.at(i);
         if(event.receiver->thread() != receiver->thread()) {
-            qWarning("[%s %s::%s line:%i] Event-Receiver-Object of EleaphProcessEvent is not in the receivers Thread, \"%s\" event of \"%s\" method will not be processed!",
+            qWarning("[%s %s::%s line:%i] Event-Receiver-Object of EleaphRpcPacketMetaEvent is not in the receivers Thread, \"%s\" event of \"%s\" method will not be processed!",
                      __FILE__,
                      typeid(*this).name(),
                      __func__ ,
                      __LINE__,
-                     event.type == EleaphProcessEvent::Type::Before ? "before" : "after",
+                     event.type == EleaphRpcPacketMetaEvent::Type::Before ? "before" : "after",
                      qPrintable(strMethod)
                      );
             events.removeAt(i);
@@ -65,7 +65,7 @@ void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
     delegate->object = receiver;
     delegate->method = methodNormalized;
     delegate->singleShot = singleShot;
-    delegate->additionalEventHandler = new EleaphProcessEventHandler(events);
+    delegate->additionalEventHandler = new EleaphRpcPacketMetaEventHandler(events);
     delegate->additionalEventHandler->moveToThread(receiver->thread());
 
     // if receiver was destroyed, remove it's rpc methods

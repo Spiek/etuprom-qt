@@ -20,8 +20,8 @@ Usermanager::Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent) : QObject(p
     // protocol handlers
     this->connect(eleaphRPC, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handleClientDisconnect(QIODevice*)));
     eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRpcPacket)));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)), false, EleaphProcessEvent_Before(this));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)), false, EleaphProcessEvent_Before(this));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this));
 
     // signal connections (this)
     this->connect(this, SIGNAL(sigUserChanged(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleUserChange(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)));
@@ -156,11 +156,11 @@ bool Usermanager::getSettingsActivateMultiSession()
 // Post packet handling
 //
 
-void Usermanager::beforePacketProcessed(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, EleaphProcessEventHandler::EventResult* eventResult)
+void Usermanager::beforePacketProcessed(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketMetaEventHandler::EventResult* eventResult)
 {
     // do a login check
     Q_UNUSED(delegate);
-    *eventResult = this->isLoggedIn(packet.data()->ioPacketDevice) ? EleaphProcessEventHandler::EventResult::Ok : EleaphProcessEventHandler::EventResult::ProtocolViolation;
+    *eventResult = this->isLoggedIn(packet.data()->ioPacketDevice) ? EleaphRpcPacketMetaEventHandler::EventResult::Ok : EleaphRpcPacketMetaEventHandler::EventResult::ProtocolViolation;
 }
 
 
