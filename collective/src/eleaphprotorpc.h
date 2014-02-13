@@ -19,14 +19,42 @@
 // forward declarations
 class EleaphRpcPacketHandler;
 
+
+//
+// Packet data
+// Extent the eleaph data packet for additional rpc philosophy
+//
 struct ElaphRpcPacketData : EleaphPacket
 {
     QString strMethodName;
 };
-
 typedef QSharedPointer<ElaphRpcPacketData> EleaphRpcPacket;
 
 
+//
+// Eleaphrpc Packet Event Meta System
+//
+// if registering a new rpc method over "EleaphProtoRPC::registerRPCMethod", it's possible to handle additional "Meta Events" for the given packet type!
+// Meta Events are events which are processed "before" or/and "after" the call of the regular registered method!
+//
+// For example:
+// before the "get.user.profile"-Packet become processed (by the regular registered method), you want first check if the user is successfull logged in.
+// This could be arranged by registering the before event and check if the user is logged in, if not you're able to "just ignore" the packet (meaning the registered method will not be called)
+// or to ignore and to delete the device which has send the packet (ProtocolViolation Type).
+//
+// Important:
+// All meta events which are registered, have to be in the SAME thread like the main receiver object!
+//
+// Background Info:
+// To implement this kind of eventsystem, the main packet handling philosophy have to be changed.
+// We need to call the before and the after Event Syncronly (to catch the return value!).
+// To be able to do this (in a multi threaded application!) the complete call process must be moved to a new class called "EleaphRpcPacketHandler".
+// This class will be created for each registered method and will be moved directly to the method receiver Object Thread.
+// If now a package arrives, the packet parser call "EleaphRpcPacketHandler::processPacket" Asyncronly.
+// The Eventhandler then call all Meta events Syncronly in the Receiver Thread including the main method call.
+//
+// Because of this little Workaround all meta events which are registered, have to be in the same thread like the main receiver object!
+//
 class EleaphRpcPacketMetaEvent
 {
     public:
@@ -38,8 +66,6 @@ class EleaphRpcPacketMetaEvent
         inline EleaphRpcPacketMetaEvent(QObject* receiver = 0, EleaphRpcPacketMetaEvent::Type type = EleaphRpcPacketMetaEvent::Type::Invalid) { this->receiver = receiver; this->type = type; }
         EleaphRpcPacketMetaEvent::Type type;
         QObject* receiver;
-
-   friend class EleaphRpcPacketHandler;
 };
 
 class EleaphRpcPacketMetaEvent_Before : public EleaphRpcPacketMetaEvent {
@@ -52,6 +78,10 @@ class EleaphRpcPacketMetaEvent_After : public EleaphRpcPacketMetaEvent {
         EleaphRpcPacketMetaEvent_After(QObject* receiver) : EleaphRpcPacketMetaEvent(receiver, EleaphRpcPacketMetaEvent::Type::After) { }
 };
 
+
+//
+// Main Eleaphrpc Packet System
+//
 class EleaphProtoRPC : public IEleaph
 {
     Q_OBJECT
@@ -105,7 +135,6 @@ class EleaphProtoRPC : public IEleaph
         // helper methods
         QByteArray extractMethodName(const char* method);
 };
-
 
 class EleaphRpcPacketHandler : public QObject
 {
