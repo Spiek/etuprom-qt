@@ -173,7 +173,7 @@ EleaphRpcPacket EleaphProtoRPC::waitAsyncForPacket(QString strMethod)
 /*
  * newDataPacketReceived - parse the new received dataPacket and forward it to registered Delegate(s)
  */
-void EleaphProtoRPC::newDataPacketReceived(EleaphPacketData *dataPacket)
+void EleaphProtoRPC::newDataPacketReceived(EleaphPacket *dataPacket)
 {
     // extract rpc method name from packet with the help of Qt's Endian method qFromBigEndian
     qint16* ptrPacketLength = (qint16*)dataPacket->baRawPacketData->data();

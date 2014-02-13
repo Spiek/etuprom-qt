@@ -75,7 +75,7 @@ void IEleaph::removeDevice(QIODevice *device)
 
     // delete (if present) used property for packet cache and the cached DataPacket
     QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
-    EleaphPacketData *packet = (variantStoredPackage.type() == QVariant::Invalid) ? (EleaphPacketData*)0 : (EleaphPacketData*)variantStoredPackage.value<void *>();
+    EleaphPacket *packet = (variantStoredPackage.type() == QVariant::Invalid) ? (EleaphPacket*)0 : (EleaphPacket*)variantStoredPackage.value<void *>();
     ioPacketDevice->setProperty(PROPERTYNAME_PACKET, QVariant(QVariant::Invalid));
     if(packet) {
         delete packet;
@@ -102,11 +102,11 @@ void IEleaph::dataHandler()
         /// <Aquire Data Packet>
         // get the exesting data packet, or if it doesn't exist a 0 Pointer
         QVariant variantStoredPackage = ioPacketDevice->property(PROPERTYNAME_PACKET);
-        EleaphPacketData *packet = variantStoredPackage.type() == QVariant::Invalid ? (EleaphPacketData*)0 : (EleaphPacketData*)variantStoredPackage.value<void *>();
+        EleaphPacket *packet = variantStoredPackage.type() == QVariant::Invalid ? (EleaphPacket*)0 : (EleaphPacket*)variantStoredPackage.value<void *>();
 
         // create new data packet if data packet doesn't allready exist
         if(!packet) {
-            packet = new EleaphPacketData;
+            packet = new EleaphPacket;
 
             // initialize default values and add new packet to progress map
             packet->intPacktLength = 0;

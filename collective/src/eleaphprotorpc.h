@@ -19,7 +19,7 @@
 // forward declarations
 class EleaphProcessEventHandler;
 
-struct ElaphRpcPacketData : EleaphPacketData
+struct ElaphRpcPacketData : EleaphPacket
 {
     QString strMethodName;
 };
@@ -91,7 +91,7 @@ class EleaphProtoRPC : public IEleaph
 
     protected:
         // interface implementation
-        virtual void newDataPacketReceived(EleaphPacketData *dataPacket);
+        virtual void newDataPacketReceived(EleaphPacket *dataPacket);
         virtual void deviceAdded(QIODevice* device);
         virtual void deviceRemoved(QIODevice* device);
 

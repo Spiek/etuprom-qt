@@ -37,7 +37,7 @@
 //
 #define PROPERTYNAME_PACKET "SQMPacketHandler_packet"
 
-struct EleaphPacketData
+struct EleaphPacket
 {
     public:
         // data
@@ -47,7 +47,7 @@ struct EleaphPacketData
 
         // if we inherit from this class,
         // we want to move the data from the old object to the new
-        EleaphPacketData* move(EleaphPacketData *moveTo, bool deleteMySelf = false)
+        EleaphPacket* move(EleaphPacket *moveTo, bool deleteMySelf = false)
         {
             moveTo->ioPacketDevice = this->ioPacketDevice;
             moveTo->baRawPacketData = this->baRawPacketData;
@@ -72,7 +72,7 @@ struct EleaphPacketData
             this->intPacktLength = 0;
         }
 
-        ~EleaphPacketData()
+        ~EleaphPacket()
         {
             // exit if there is nothing to delete
             if(!this->baRawPacketData) {
@@ -118,7 +118,7 @@ class IEleaph : public QObject
         virtual void deviceAdded(QIODevice* device);
         virtual void deviceRemoved(QIODevice* device);
         virtual void packetDownloadProcess(QIODevice* device, qint64 downloadedBytes, qint64 totalBytes);
-        virtual void newDataPacketReceived(EleaphPacketData *dataPacket) = 0;
+        virtual void newDataPacketReceived(EleaphPacket *dataPacket) = 0;
 
     private slots:
         void newTcpHost();
