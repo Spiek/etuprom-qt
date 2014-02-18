@@ -134,7 +134,7 @@ class EleaphProtoRPC : public IEleaph
 
     private:
         // rpc members
-        QMultiMap<QString, EleaphProtoRPC::Delegate*> mapRPCFunctions;
+        QMultiMap<QString, QSharedPointer<EleaphProtoRPC::Delegate> > mapRPCFunctions;
 
         // helper methods
         QByteArray extractMethodName(const char* method);
@@ -152,10 +152,13 @@ class EleaphRpcPacketHandler : public QObject
         EleaphRpcPacketHandler(QList<EleaphRpcPacketMetaEvent> events) { this->lstEvents = events; qRegisterMetaType<EleaphRpcPacketHandler::EventResult>("EventResult"); }
 
     public slots:
-        void processPacket(EleaphProtoRPC::Delegate* delegate, EleaphRpcPacket packet)
+        void processPacket(QSharedPointer<EleaphProtoRPC::Delegate> delegate, EleaphRpcPacket packet)
         {
-            // process all "beforePacketProcess" Events, if one event result with false, abort packet process
-            if(!this->processEvent(delegate, packet, EleaphRpcPacketMetaEvent::Type::Before)) {
+            // simplefy some vars
+            EleaphProtoRPC::Delegate *pDelegate = delegate.data();
+
+			// process all "beforePacketProcess" Events, if one event result with false, abort packet process
+            if(!this->processEvent(pDelegate, packet, EleaphRpcPacketMetaEvent::Type::Before)) {
                 return;
             }
 
@@ -167,7 +170,7 @@ class EleaphRpcPacketHandler : public QObject
             QMetaObject::invokeMethod(object, method.constData(), Qt::DirectConnection, Q_ARG(EleaphRpcPacket, packet));
 
             // process all "afterPacketProcess" Events
-            this->processEvent(delegate, packet, EleaphRpcPacketMetaEvent::Type::After);
+            this->processEvent(pDelegate, packet, EleaphRpcPacketMetaEvent::Type::After);
         }
 
     private:
