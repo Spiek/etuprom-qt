@@ -80,7 +80,7 @@ class Usermanager : public QObject
 
     private slots:
         // Post packet handling
-        void beforePacketProcessed(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketHandler::EventResult *eventResult);
+        void metaEventUserLoggedInCheck(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketHandler::EventResult *eventResult);
 
         // Packet Event handlers
         void handleLogin(EleaphRpcPacket dataPacket);

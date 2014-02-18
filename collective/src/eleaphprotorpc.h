@@ -63,19 +63,20 @@ class EleaphRpcPacketMetaEvent
             Before = 1,
             After = 2
         };
-        inline EleaphRpcPacketMetaEvent(QObject* receiver = 0, EleaphRpcPacketMetaEvent::Type type = EleaphRpcPacketMetaEvent::Type::Invalid) { this->receiver = receiver; this->type = type; }
+        inline EleaphRpcPacketMetaEvent(QObject* receiver = 0, EleaphRpcPacketMetaEvent::Type type = EleaphRpcPacketMetaEvent::Type::Invalid, QString eventSlotName = "") { this->receiver = receiver; this->type = type; this->strEventSlotName = eventSlotName; }
         EleaphRpcPacketMetaEvent::Type type;
         QObject* receiver;
+        QString strEventSlotName;
 };
 
 class EleaphRpcPacketMetaEvent_Before : public EleaphRpcPacketMetaEvent {
     public:
-        EleaphRpcPacketMetaEvent_Before(QObject* receiver) : EleaphRpcPacketMetaEvent(receiver, EleaphRpcPacketMetaEvent::Type::Before) { }
+        EleaphRpcPacketMetaEvent_Before(QObject* receiver, QString eventSlotName = "beforePacketProcess") : EleaphRpcPacketMetaEvent(receiver, EleaphRpcPacketMetaEvent::Type::Before, eventSlotName) { }
 };
 
 class EleaphRpcPacketMetaEvent_After : public EleaphRpcPacketMetaEvent {
     public:
-        EleaphRpcPacketMetaEvent_After(QObject* receiver) : EleaphRpcPacketMetaEvent(receiver, EleaphRpcPacketMetaEvent::Type::After) { }
+        EleaphRpcPacketMetaEvent_After(QObject* receiver, QString eventSlotName = "afterPacketProcess") : EleaphRpcPacketMetaEvent(receiver, EleaphRpcPacketMetaEvent::Type::After, eventSlotName) { }
 };
 
 
@@ -182,8 +183,8 @@ class EleaphRpcPacketHandler : public QObject
                 QObject* object = event.receiver;
                 const QMetaObject* metaObject = object->metaObject();
 
-                QString strEventMethodName = type == EleaphRpcPacketMetaEvent::Type::Before ? "beforePacketProcessed" : "afterPacketProcessed";
-                if(metaObject->indexOfMethod(QMetaObject::normalizedSignature((strEventMethodName + "(EleaphProtoRPC::Delegate*,EleaphRpcPacket,EleaphRpcPacketHandler::EventResult*)").toStdString().c_str())) != -1) {
+                QString strEventMethodName = event.strEventSlotName;
+                if(!strEventMethodName.isEmpty() && metaObject->indexOfMethod(QMetaObject::normalizedSignature((strEventMethodName + "(EleaphProtoRPC::Delegate*,EleaphRpcPacket,EleaphRpcPacketHandler::EventResult*)").toStdString().c_str())) != -1) {
                     EventResult eventResult = EventResult::Ok;
                     QMetaObject::invokeMethod(object, strEventMethodName.toStdString().c_str(), Qt::DirectConnection, Q_ARG(EleaphProtoRPC::Delegate*, delegate), Q_ARG(EleaphRpcPacket, packet), Q_ARG(EleaphRpcPacketHandler::EventResult*, &eventResult));
 

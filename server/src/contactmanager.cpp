@@ -7,7 +7,7 @@ Contactmanager::Contactmanager(EleaphProtoRPC *eleaphRPC, Usermanager *managerUs
     this->managerUser = managerUser;
 
     // register all needed protocol messages
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_GET_LIST, this, SLOT(handleContactList(EleaphRPCDataPacket*)), false, EleaphRpcPacketMetaEvent_Before(managerUser));
+    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_GET_LIST, this, SLOT(handleContactList(EleaphRPCDataPacket*)), false, EleaphRpcPacketMetaEvent_Before(this->managerUser, "metaEventUserLoggedInCheck"));
 
     // connect all needed signals from other modules
     this->connect(managerUser, SIGNAL(sigUserChanged(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleContactChange(Usermanager::SharedSession)));
