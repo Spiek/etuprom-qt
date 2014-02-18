@@ -65,8 +65,8 @@ void EleaphProtoRPC::registerRPCMethod(QString strMethod, QObject *receiver, con
     delegate->object = receiver;
     delegate->method = methodNormalized;
     delegate->singleShot = singleShot;
-    delegate->additionalEventHandler = new EleaphRpcPacketHandler(events);
-    delegate->additionalEventHandler->moveToThread(receiver->thread());
+    delegate->eventHandler = new EleaphRpcPacketHandler(events);
+    delegate->eventHandler->moveToThread(receiver->thread());
 
     // if receiver was destroyed, remove it's rpc methods
     this->connect(receiver, SIGNAL(destroyed()), this, SLOT(unregisterRPCObject()));
@@ -200,7 +200,7 @@ void EleaphProtoRPC::newDataPacketReceived(EleaphPacket *dataPacket)
     // ... loop all delegates which are registered for strMethodName, and invoke them one by one
     foreach(EleaphProtoRPC::Delegate *delegate, this->mapRPCFunctions.values(strMethodName)) {
         // let the EleaphAdditionalEventHandler do the rest (int the event loop of the receivers thread!)
-        emit delegate->additionalEventHandler->processPacket(delegate, watcher);
+        emit delegate->eventHandler->processPacket(delegate, watcher);
     }
 }
 

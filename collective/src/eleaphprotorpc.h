@@ -92,11 +92,14 @@ class EleaphProtoRPC : public IEleaph
 
     public:
         // structure definations
+        // FIXME: Memory leak here, if Delegate Object will be deleted, the eventHandler are not deleted!
+        //        Not Possible to delete eventHandler in Delegate Decon because of Forward declaration of eventhandler
+        //        Possible Solution: Try to remove the forward declaration!
         struct Delegate
         {
             QObject* object;
             QByteArray method;
-            EleaphRpcPacketHandler* additionalEventHandler;
+            EleaphRpcPacketHandler *eventHandler;
             bool singleShot;
         };
 
