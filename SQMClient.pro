@@ -11,6 +11,9 @@ QT       += core gui network webkitwidgets
 TARGET = SQMClient
 TEMPLATE = app
 
+# enable C++11
+CONFIG += c++11
+
 # Sources (collective)
 SOURCES +=  collective/src/eleaphprotorpc.cpp \
             collective/proto/src/protocol.pb.cc \
