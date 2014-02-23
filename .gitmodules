@@ -1,0 +1,4 @@
+[submodule "vendor/eleaph-qt"]
+	path = vendor/eleaph-qt
+	url = git@github.com:Spiek/eleaph-qt.git
+	branch = master
