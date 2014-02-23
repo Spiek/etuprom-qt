@@ -8,18 +8,13 @@
 QT       += core gui network webkitwidgets
 
 # Compile Settings
-TARGET = SQMClient
+TARGET = EtupromClient
 TEMPLATE = app
 
 # enable C++11
 CONFIG += c++11
 
-# Sources (collective)
-SOURCES +=  collective/src/eleaphprotorpc.cpp \
-            collective/proto/src/protocol.pb.cc \
-            collective/src/ieleaph.cpp
-
-# Sources (client)
+# Sources (Client)
 SOURCES +=  client/src/main.cpp\
             client/src/mainwindow.cpp \
             client/src/loginform.cpp \
@@ -27,18 +22,28 @@ SOURCES +=  client/src/main.cpp\
             client/src/chatbox.cpp \
             client/src/designloader.cpp
 
-# Headers (collective)
-HEADERS  += collective/src/eleaphprotorpc.h \
-            collective/proto/src/protocol.pb.cc \
-            collective/src/ieleaph.h \
-    		collective/proto/packettypes.h
+# Sources (Protocol)
+SOURCES +=  collective/proto/src/protocol.pb.cc
 
-# Headers (client)
+# Sources (Eleaph-qt)
+SOURCES +=  vendor/eleaph-qt/src/ieleaph.cpp \
+            vendor/eleaph-qt/src/eleaphprotorpc.cpp
+
+
+# Headers (Client)
 HEADERS  += client/src/mainwindow.h  \
             client/src/loginform.h \
             client/src/global.h \
             client/src/chatbox.h \
             client/src/designloader.h
+
+# Headers (Protocol)
+HEADERS +=  collective/proto/src/protocol.pb.h \
+            collective/proto/packettypes.h
+
+# Headers (Eleaph-qt)
+HEADERS +=  vendor/eleaph-qt/src/ieleaph.h \
+            vendor/eleaph-qt/src/eleaphprotorpc.h
 
 # Forms
 FORMS    += client/ui/mainwindow.ui \
