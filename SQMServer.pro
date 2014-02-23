@@ -12,37 +12,46 @@ QT       -= gui
 CONFIG += c++11
 
 # Compile Settings
-TARGET	= SQMServer
+TARGET	= EtupromServer
 CONFIG	+= console
 CONFIG	-= app_bundle
 TEMPLATE = app
 
-# Sources
+# Sources (Server)
 SOURCES +=  server/src/main.cpp \
             server/src/packetprocessor.cpp \
             server/src/global.cpp \
             server/src/databasehelper.cpp \
             server/src/usermanager.cpp \
-            collective/src/eleaphprotorpc.cpp \
-            collective/proto/src/protocol.pb.cc \
-            collective/src/ieleaph.cpp \
             server/src/querybuilder.cpp \
             server/src/chatmanager.cpp \
             server/src/contactmanager.cpp
 
-# Headers
+# Sources (Protocol)
+SOURCES +=  collective/proto/src/protocol.pb.cc
+
+# Sources (Eleaph-qt)
+SOURCES +=  vendor/eleaph-qt/src/ieleaph.cpp \
+            vendor/eleaph-qt/src/eleaphprotorpc.cpp
+
+
+# Headers (Server)
 HEADERS +=  \
             server/src/packetprocessor.h \
             server/src/global.h \
             server/src/databasehelper.h \
             server/src/usermanager.h \
-            collective/src/eleaphprotorpc.h \
-            collective/proto/src/protocol.pb.cc \
-            collective/src/ieleaph.h \
             server/src/querybuilder.h \
             server/src/chatmanager.h \
-            server/src/contactmanager.h \
-    		collective/proto/packettypes.h
+            server/src/contactmanager.h
+
+# Headers (Protocol)
+HEADERS +=  collective/proto/src/protocol.pb.h \
+            collective/proto/packettypes.h
+
+# Headers (Eleaph-qt)
+HEADERS +=  vendor/eleaph-qt/src/ieleaph.h \
+            vendor/eleaph-qt/src/eleaphprotorpc.h
 
 # include path
 INCLUDEPATH += "include/"
