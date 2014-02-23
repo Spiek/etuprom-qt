@@ -14,6 +14,9 @@ TEMPLATE = app
 # enable C++11
 CONFIG += c++11
 
+# Include Eleaph Vendor
+include("vendor\eleaph-qt\eleaph-qt.pri")
+
 # Sources (Client)
 SOURCES +=  client/src/main.cpp\
             client/src/mainwindow.cpp \
@@ -22,14 +25,6 @@ SOURCES +=  client/src/main.cpp\
             client/src/chatbox.cpp \
             client/src/designloader.cpp
 
-# Sources (Protocol)
-SOURCES +=  collective/proto/src/protocol.pb.cc
-
-# Sources (Eleaph-qt)
-SOURCES +=  vendor/eleaph-qt/src/ieleaph.cpp \
-            vendor/eleaph-qt/src/eleaphprotorpc.cpp
-
-
 # Headers (Client)
 HEADERS  += client/src/mainwindow.h  \
             client/src/loginform.h \
@@ -37,13 +32,13 @@ HEADERS  += client/src/mainwindow.h  \
             client/src/chatbox.h \
             client/src/designloader.h
 
+
+# Sources (Protocol)
+SOURCES +=  collective/proto/src/protocol.pb.cc
+
 # Headers (Protocol)
 HEADERS +=  collective/proto/src/protocol.pb.h \
             collective/proto/packettypes.h
-
-# Headers (Eleaph-qt)
-HEADERS +=  vendor/eleaph-qt/src/ieleaph.h \
-            vendor/eleaph-qt/src/eleaphprotorpc.h
 
 # Forms
 FORMS    += client/ui/mainwindow.ui \

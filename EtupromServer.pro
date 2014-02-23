@@ -17,6 +17,10 @@ CONFIG	+= console
 CONFIG	-= app_bundle
 TEMPLATE = app
 
+# Include Eleaph Vendor
+include("vendor\eleaph-qt\eleaph-qt.pri")
+
+
 # Sources (Server)
 SOURCES +=  server/src/main.cpp \
             server/src/packetprocessor.cpp \
@@ -26,14 +30,6 @@ SOURCES +=  server/src/main.cpp \
             server/src/querybuilder.cpp \
             server/src/chatmanager.cpp \
             server/src/contactmanager.cpp
-
-# Sources (Protocol)
-SOURCES +=  collective/proto/src/protocol.pb.cc
-
-# Sources (Eleaph-qt)
-SOURCES +=  vendor/eleaph-qt/src/ieleaph.cpp \
-            vendor/eleaph-qt/src/eleaphprotorpc.cpp
-
 
 # Headers (Server)
 HEADERS +=  \
@@ -45,13 +41,13 @@ HEADERS +=  \
             server/src/chatmanager.h \
             server/src/contactmanager.h
 
+
+# Sources (Protocol)
+SOURCES +=  collective/proto/src/protocol.pb.cc
+
 # Headers (Protocol)
 HEADERS +=  collective/proto/src/protocol.pb.h \
             collective/proto/packettypes.h
-
-# Headers (Eleaph-qt)
-HEADERS +=  vendor/eleaph-qt/src/ieleaph.h \
-            vendor/eleaph-qt/src/eleaphprotorpc.h
 
 # include path
 INCLUDEPATH += "include/"
