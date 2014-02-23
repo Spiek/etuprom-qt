@@ -204,7 +204,6 @@ void Usermanager::handleLogin(EleaphRpcPacket dataPacket)
     // of course if login wasn't successfull, delete the constructed session
     if(response.type() != Protocol::LoginResponse_Type_Success) {
         delete session;
-        return;
     }
 
     // otherwise log user in
