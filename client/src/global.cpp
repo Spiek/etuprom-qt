@@ -8,7 +8,7 @@
 
 // init static vars
 QTcpSocket* Global::socketServer = 0;
-EleaphProtoRPC* Global::eleaphRpc = 0;
+EleaphRpc* Global::eleaphRpc = 0;
 bool Global::init = false;
 bool Global::boolLoggedIn = false;
 QMap<qint32, Protocol::Contact*> Global::mapContactList;
@@ -50,7 +50,7 @@ void Global::initialize()
     Global::socketServer = new QTcpSocket(app);
 
     // init EleaphRpc handler
-    Global::eleaphRpc = new EleaphProtoRPC(app);
+    Global::eleaphRpc = new EleaphRpc(app);
     Global::eleaphRpc->addDevice(Global::socketServer, IEleaph::NeverForgetDevice);
 
     // class was successfull initialized!

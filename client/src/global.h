@@ -26,7 +26,7 @@ class Global
 {
     public:
         static QTcpSocket *socketServer;
-        static EleaphProtoRPC *eleaphRpc;
+        static EleaphRpc *eleaphRpc;
         static QString strServerHostname;
         static quint16 intServerPort;
         static bool boolLoggedIn;
