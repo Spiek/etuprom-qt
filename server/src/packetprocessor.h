@@ -14,7 +14,7 @@
 #include <QtCore/QPair>
 
 // own libs
-#include "EleaphProtoRpc"
+#include "EleaphRpc"
 #include "global.h"
 #include "collective/proto/packettypes.h"
 

@@ -49,9 +49,6 @@ SOURCES +=  collective/proto/src/protocol.pb.cc
 HEADERS +=  collective/proto/src/protocol.pb.h \
             collective/proto/packettypes.h
 
-# include path
-INCLUDEPATH += "include/"
-
 
 #
 # Protobuf config section

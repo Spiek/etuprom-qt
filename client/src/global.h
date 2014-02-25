@@ -19,7 +19,7 @@
 #include <QtNetwork/QHostInfo>
 
 // own (collective)
-#include "EleaphProtoRpc"
+#include "EleaphRpc"
 #include "protocol.pb.h"
 
 class Global

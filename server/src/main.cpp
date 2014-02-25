@@ -15,7 +15,7 @@
 #include "packetprocessor.h"
 
 // collective own libs
-#include "EleaphProtoRpc"
+#include "EleaphRpc"
 
 int main(int argc, char *argv[])
 {

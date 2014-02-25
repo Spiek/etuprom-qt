@@ -52,9 +52,6 @@ RESOURCES += client/res/global.qrc
 # Win32: Set Application/Windows Icon
 win32:RC_ICONS = "client/res/client.ico"
 
-# include path
-INCLUDEPATH += "include/"
-
 #
 # Protobuf config section
 #

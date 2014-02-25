@@ -11,7 +11,7 @@
 
 // own libs
 #include "collective/proto/packettypes.h"
-#include "EleaphProtoRpc"
+#include "EleaphRpc"
 #include "protocol.pb.h"
 #include "global.h"
 
