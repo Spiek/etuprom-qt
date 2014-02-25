@@ -28,9 +28,9 @@ class PacketProcessor : public QObject
     Q_OBJECT
     public:
         // con/decon
-        PacketProcessor(EleaphProtoRPC* eleaphRpc, QObject *parent = 0);
+        PacketProcessor(EleaphRpc* eleaphRpc, QObject *parent = 0);
         ~PacketProcessor();
-        EleaphProtoRPC* getEleaphRpc();
+        EleaphRpc* getEleaphRpc();
 
         // manager getter
         Usermanager* getUserManager();
@@ -44,7 +44,7 @@ class PacketProcessor : public QObject
         Contactmanager* managerContact;
 
         // helper methods
-        EleaphProtoRPC *eleaphRpc;
+        EleaphRpc *eleaphRpc;
 };
 
 #endif // SQMPACKETPROCESSOR_H

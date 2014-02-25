@@ -6,7 +6,7 @@
 
 #include "chatmanager.h"
 
-Chatmanager::Chatmanager(EleaphProtoRPC *eleaphRpc, Usermanager* managerUser, QObject *parent) : QObject(parent)
+Chatmanager::Chatmanager(EleaphRpc *eleaphRpc, Usermanager* managerUser, QObject *parent) : QObject(parent)
 {
     // save the packet processor
     this->eleaphRpc = eleaphRpc;
@@ -28,7 +28,7 @@ void Chatmanager::handlePrivateChatMessage(EleaphRpcPacket dataPacket)
     // get some needed data
     Usermanager *userManager = this->managerUser;
     QIODevice *deviceUser = dataPacket.data()->ioPacketDevice;
-    EleaphProtoRPC *eleaphRpc = this->eleaphRpc;
+    EleaphRpc *eleaphRpc = this->eleaphRpc;
 
     // if sended user is not logged in, then we have a very big protocol violation here!
     // FIXME: kill the peer!

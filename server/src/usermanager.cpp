@@ -9,7 +9,7 @@
 //
 // Con and decon
 //
-Usermanager::Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent) : QObject(parent)
+Usermanager::Usermanager(EleaphRpc *eleaphRPC, QObject *parent) : QObject(parent)
 {
     // save eleaphrpc
     this->eleaphRPC = eleaphRPC;
@@ -156,7 +156,7 @@ bool Usermanager::getSettingsActivateMultiSession()
 // Post packet handling
 //
 
-void Usermanager::metaEventUserLoggedInCheck(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketHandler::EventResult* eventResult)
+void Usermanager::metaEventUserLoggedInCheck(EleaphRpcDelegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketHandler::EventResult* eventResult)
 {
     // do a login check
     Q_UNUSED(delegate);

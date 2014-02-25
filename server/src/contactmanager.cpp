@@ -1,6 +1,6 @@
 #include "contactmanager.h"
 
-Contactmanager::Contactmanager(EleaphProtoRPC *eleaphRPC, Usermanager *managerUser, QObject *parent) : QObject(parent)
+Contactmanager::Contactmanager(EleaphRpc *eleaphRPC, Usermanager *managerUser, QObject *parent) : QObject(parent)
 {
     // save eleaphrpc
     this->eleaphRPC = eleaphRPC;

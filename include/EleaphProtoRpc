@@ -1,1 +1,1 @@
-#include "../vendor/eleaph-qt/src/eleaphprotorpc.h"
+#include "../vendor/eleaph-qt/src/eleaphrpc.h"

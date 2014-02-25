@@ -12,7 +12,7 @@
 //  Con's and Decon's
 //
 
-PacketProcessor::PacketProcessor(EleaphProtoRPC *eleaphRpc, QObject *parent) : QObject(parent)
+PacketProcessor::PacketProcessor(EleaphRpc *eleaphRpc, QObject *parent) : QObject(parent)
 {
     // save eleaphRPC instance
     this->eleaphRpc = eleaphRpc;
@@ -30,7 +30,7 @@ PacketProcessor::~PacketProcessor()
     delete this->managerContact;
 }
 
-EleaphProtoRPC* PacketProcessor::getEleaphRpc()
+EleaphRpc* PacketProcessor::getEleaphRpc()
 {
     return this->eleaphRpc;
 }

@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     Global::initialize();
 
     // initialize eleaph-proto-RPC-System
-    EleaphProtoRPC *eleaphRPC = new EleaphProtoRPC(&a, 65536);
+    EleaphRpc *eleaphRPC = new EleaphRpc(&a, 65536);
 
     // initialize packet processor, which process the packets
     // (we are don't do anything with the object, but construct, everything is handled in the constructor!)

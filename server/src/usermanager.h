@@ -52,7 +52,7 @@ class Usermanager : public QObject
 
     public:
         // Con and decon
-        Usermanager(EleaphProtoRPC *eleaphRPC, QObject *parent = 0);
+        Usermanager(EleaphRpc *eleaphRPC, QObject *parent = 0);
         ~Usermanager();
 
         // External user managment helper methods
@@ -73,14 +73,14 @@ class Usermanager : public QObject
         // Internal user store
         QMap<QIODevice*, Protocol::Session*> mapSocketsSession;
         QMap<qint32, QMap<QIODevice*, Protocol::Session*>* > mapUsersSessions;
-        EleaphProtoRPC* eleaphRPC;
+        EleaphRpc* eleaphRPC;
 
         // Settings
         bool boolSettingsMultiSessionsActive;
 
     private slots:
         // Post packet handling
-        void metaEventUserLoggedInCheck(EleaphProtoRPC::Delegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketHandler::EventResult *eventResult);
+        void metaEventUserLoggedInCheck(EleaphRpcDelegate *delegate, EleaphRpcPacket packet, EleaphRpcPacketHandler::EventResult *eventResult);
 
         // Packet Event handlers
         void handleLogin(EleaphRpcPacket dataPacket);

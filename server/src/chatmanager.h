@@ -22,10 +22,10 @@ class Chatmanager : public QObject
 {
     Q_OBJECT
     public:
-        Chatmanager(EleaphProtoRPC *eleaphRpc, Usermanager* managerUser, QObject *parent = 0);
+        Chatmanager(EleaphRpc *eleaphRpc, Usermanager* managerUser, QObject *parent = 0);
 
     private:
-        EleaphProtoRPC *eleaphRpc;
+        EleaphRpc *eleaphRpc;
         Usermanager *managerUser;
 
     private slots:

@@ -16,10 +16,10 @@ class Contactmanager : public QObject
     Q_OBJECT
     public:
         // con and decon
-        Contactmanager(EleaphProtoRPC* eleaphRPC, Usermanager* managerUser, QObject *parent = 0);
+        Contactmanager(EleaphRpc* eleaphRPC, Usermanager* managerUser, QObject *parent = 0);
 
     private:
-		EleaphProtoRPC* eleaphRPC;
+        EleaphRpc* eleaphRPC;
 		Usermanager* managerUser;
 
 	private slots:
