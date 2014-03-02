@@ -19,9 +19,9 @@ Usermanager::Usermanager(EleaphRpc *eleaphRPC, QObject *parent) : QObject(parent
 
     // protocol handlers
     this->connect(eleaphRPC, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handleClientDisconnect(QIODevice*)));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRpcPacket)));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this, "metaEventUserLoggedInCheck"));
-    eleaphRPC->registerRPCMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this, "metaEventUserLoggedInCheck"));
+    eleaphRPC->registerRpcMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRpcPacket)));
+    eleaphRPC->registerRpcMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this, "metaEventUserLoggedInCheck"));
+    eleaphRPC->registerRpcMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this, "metaEventUserLoggedInCheck"));
 
     // signal connections (this)
     this->connect(this, SIGNAL(sigUserChanged(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleUserChange(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)));

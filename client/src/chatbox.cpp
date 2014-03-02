@@ -18,7 +18,7 @@ ChatBox::ChatBox(QWidget *parent) :
     this->connect(this->sigMapperUserMessages, SIGNAL(mapped(int)), this, SLOT(chatTextChanged(int)));
 
     // protocol handlings
-    Global::eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CHAT_PRIVATE, this, SLOT(handleInboundTextMessage(DataPacket*)));
+    Global::eleaphRpc->registerRpcMethod(PACKET_DESCRIPTOR_CHAT_PRIVATE, this, SLOT(handleInboundTextMessage(DataPacket*)));
 }
 
 ChatBox::~ChatBox()

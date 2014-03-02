@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->connect(Global::socketServer, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(serverConnectionError()));
 
     // signal --> slot connections (PacketProcessor)
-    Global::eleaphRpc->registerRPCMethod(PACKET_DESCRIPTOR_CONTACT_ALTERED, this, SLOT(handleUserAltered(DataPacket*)));
+    Global::eleaphRpc->registerRpcMethod(PACKET_DESCRIPTOR_CONTACT_ALTERED, this, SLOT(handleUserAltered(DataPacket*)));
 
      // signal --> slot connections (Gui)
     this->connect(this->ui->treeWidgetContactList, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onContactClicked(QTreeWidgetItem*,int)));
