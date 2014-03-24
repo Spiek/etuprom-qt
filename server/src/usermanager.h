@@ -53,7 +53,6 @@ class Usermanager : public QObject
     public:
         // Con and decon
         Usermanager(EleaphRpc *eleaphRPC, QObject *parent = 0);
-        ~Usermanager();
 
         // External user managment helper methods
         void addUserSession(QIODevice *device, Protocol::Session *session);
@@ -71,8 +70,11 @@ class Usermanager : public QObject
 
     private:
         // Internal user store
-        QMap<QIODevice*, Protocol::Session*> mapSocketsSession;
-        QMap<qint32, QMap<QIODevice*, Protocol::Session*>* > mapUsersSessions;
+        static QMap<QIODevice*, Protocol::Session*> mapSocketsSession;
+        static QMap<qint32, QMap<QIODevice*, Protocol::Session*>* > mapUsersSessions;
+        static QMutex* mutexSessionDataLocker;
+
+        // Eleaph connection
         EleaphRpc* eleaphRPC;
 
         // Settings

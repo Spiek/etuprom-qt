@@ -26,6 +26,9 @@
 class PacketProcessor : public QObject
 {
     Q_OBJECT
+    public slots:
+        void start();
+
     public:
         // con/decon
         PacketProcessor(EleaphRpc* eleaphRpc, QObject *parent = 0);

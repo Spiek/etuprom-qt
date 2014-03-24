@@ -6,34 +6,34 @@
 
 #include "usermanager.h"
 
+QMutex* Usermanager::mutexSessionDataLocker;
+QMap<QIODevice*, Protocol::Session*> Usermanager::mapSocketsSession;
+QMap<qint32, QMap<QIODevice*, Protocol::Session*>* > Usermanager::mapUsersSessions;
+
+
 //
 // Con and decon
 //
 Usermanager::Usermanager(EleaphRpc *eleaphRPC, QObject *parent) : QObject(parent)
 {
+    // register needed meta types (for external communication over signals!)
+    qRegisterMetaType<Usermanager::SharedSession>("Usermanager::SharedSession");
+    qRegisterMetaType<Usermanager::UserChangeType>("Usermanager::UserChangeType");
+
     // save eleaphrpc
     this->eleaphRPC = eleaphRPC;
 
     // set default settings
     this->boolSettingsMultiSessionsActive = true;
 
-    // protocol handlers
+    // protocol handlers (threaded handling!)
     this->connect(eleaphRPC, SIGNAL(sigDeviceRemoved(QIODevice*)), this, SLOT(handleClientDisconnect(QIODevice*)));
-    eleaphRPC->registerRpcMethod(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRpcPacket)));
-    eleaphRPC->registerRpcMethod(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this, "metaEventUserLoggedInCheck"));
-    eleaphRPC->registerRpcMethod(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this, "metaEventUserLoggedInCheck"));
+    eleaphRPC->registerRpcMethodWorker(PACKET_DESCRIPTOR_USER_LOGIN, this, SLOT(handleLogin(EleaphRpcPacket)));
+    eleaphRPC->registerRpcMethodWorker(PACKET_DESCRIPTOR_USER_LOGOUT, this, SLOT(handleLogout(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this, "metaEventUserLoggedInCheck"));
+    eleaphRPC->registerRpcMethodWorker(PACKET_DESCRIPTOR_USER_SELF_GET_INFO, this, SLOT(handleUserInfoSelf(EleaphRpcPacket)), false, EleaphRpcPacketMetaEvent_Before(this, "metaEventUserLoggedInCheck"));
 
     // signal connections (this)
     this->connect(this, SIGNAL(sigUserChanged(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)), this, SLOT(handleUserChange(Usermanager::SharedSession,QIODevice*,Usermanager::UserChangeType)));
-}
-
-Usermanager::~Usermanager()
-{
-    // here we delete all sessions objects
-    qDeleteAll(this->mapSocketsSession.values());
-
-    // here we only delete the qmap "case"
-    qDeleteAll(this->mapUsersSessions.values());
 }
 
 
@@ -43,6 +43,9 @@ Usermanager::~Usermanager()
 
 void Usermanager::addUserSession(QIODevice *device, Protocol::Session* session)
 {
+    // lock user session data mutex
+    QMutexLocker(this->mutexSessionDataLocker);
+
     // exit if object is invalid or session is allready logged in
     if(!session || this->mapSocketsSession.contains(device)) {
         return;
@@ -70,6 +73,9 @@ void Usermanager::addUserSession(QIODevice *device, Protocol::Session* session)
 
 void Usermanager::removeUserSession(QIODevice *device)
 {
+    // lock user session data mutex
+    QMutexLocker(this->mutexSessionDataLocker);
+
     // exit if the device is invalid or if no session for device was found
     if(!device || !this->mapSocketsSession.contains(device)) {
         return;
@@ -104,34 +110,52 @@ void Usermanager::removeUserSession(QIODevice *device)
 
 bool Usermanager::isLoggedIn(QIODevice *device)
 {
+    // lock user session data mutex
+    QMutexLocker(this->mutexSessionDataLocker);
+
     return (device ? this->mapSocketsSession.contains(device) : false);
 }
 
 bool Usermanager::isLoggedIn(qint32 userID)
 {
+    // lock user session data mutex
+    QMutexLocker(this->mutexSessionDataLocker);
+
     return this->mapUsersSessions.contains(userID);
 }
 
 
 Protocol::Session* Usermanager::getConnectedSession(QIODevice *device)
 {
+    // lock user session data mutex
+    QMutexLocker(this->mutexSessionDataLocker);
+
     return this->mapSocketsSession.value(device, (Protocol::Session*)0);
 }
 
 QList<Protocol::Session*> Usermanager::getConnectedSessions(qint32 userid)
 {
+    // lock user session data mutex
+    QMutexLocker(this->mutexSessionDataLocker);
+
     QMap<QIODevice*, Protocol::Session*>* mapUserSessions = mapUsersSessions.value(userid, (QMap<QIODevice*, Protocol::Session*>*)0);
     return !mapUserSessions ? QList<Protocol::Session*>() : mapUserSessions->values();
 }
 
 QList<QIODevice*> Usermanager::getConnectedSessionSockets(qint32 userid)
 {
+    // lock user session data mutex
+    QMutexLocker(this->mutexSessionDataLocker);
+
     QMap<QIODevice*, Protocol::Session*>* mapUserSessions = mapUsersSessions.value(userid, (QMap<QIODevice*, Protocol::Session*>*)0);
     return !mapUserSessions ? QList<QIODevice*>() : mapUserSessions->keys();
 }
 
 Protocol::User* Usermanager::getConnectedUser(QIODevice *device)
 {
+    // lock user session data mutex
+    QMutexLocker(this->mutexSessionDataLocker);
+
     Protocol::Session *session = this->getConnectedSession(device);
     return session ? session->mutable_user() : (Protocol::User*)0;
 }

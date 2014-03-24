@@ -16,11 +16,6 @@ PacketProcessor::PacketProcessor(EleaphRpc *eleaphRpc, QObject *parent) : QObjec
 {
     // save eleaphRPC instance
     this->eleaphRpc = eleaphRpc;
-
-    // construct sub manager
-    this->managerUser = new Usermanager(eleaphRpc, this);
-    this->managerChat = new Chatmanager(eleaphRpc, this->managerUser, this);
-    this->managerContact = new Contactmanager(eleaphRpc, this->managerUser, this);
 }
 
 PacketProcessor::~PacketProcessor()
@@ -28,6 +23,14 @@ PacketProcessor::~PacketProcessor()
     delete this->managerUser;
     delete this->managerChat;
     delete this->managerContact;
+}
+
+void PacketProcessor::start()
+{
+    // construct sub manager
+    this->managerUser = new Usermanager(this->eleaphRpc, this);
+    this->managerChat = new Chatmanager(this->eleaphRpc, this->managerUser, this);
+    this->managerContact = new Contactmanager(this->eleaphRpc, this->managerUser, this);
 }
 
 EleaphRpc* PacketProcessor::getEleaphRpc()
