@@ -9,9 +9,13 @@
 
 LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
     QMainWindow(parent),
+    controller(this),
     ui(new Ui::LoginForm)
 {
     ui->setupUi(this);
+
+    // init protocol controller events
+    this->connect(&this->controller, SIGNAL(connectionChanged(QTcpSocket*,LoginProtocolController::ConnectionState)), this, SLOT(connectionChanged(QTcpSocket*,LoginProtocolController::ConnectionState)));
 
     // some style improvings
     this->loadDesign("default");
@@ -24,14 +28,6 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
         this->ui->statusbar->showMessage(strErrorMessage);
     }
 
-    // only allow unconnected sockets, reset all other socket states to have a clear state
-    if(!(Global::socketServer->state() == QTcpSocket::UnconnectedState || Global::socketServer->state() == QTcpSocket::ConnectedState)) {
-        Global::socketServer->disconnectFromHost();
-    }
-
-    // signal --> slot connections (Socket)
-    this->connect(Global::socketServer, SIGNAL(disconnected()), this, SLOT(serverDisconnected()));
-
     // signal --> slot connections (Gui)
     this->connect(this->ui->lineEditLogin, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
     this->connect(this->ui->lineEditPassword, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
@@ -39,8 +35,6 @@ LoginForm::LoginForm(QString strErrorMessage, QWidget *parent) :
 
     this->connect(this->ui->lineEditLogin, SIGNAL(returnPressed()), this, SLOT(login()));
     this->connect(this->ui->lineEditPassword, SIGNAL(returnPressed()), this, SLOT(login()));
-    this->connect(this->ui->lineEditSession, SIGNAL(textChanged(QString)), this, SLOT(loginValidator()));
-
     this->connect(this->ui->pushButtonLogin, SIGNAL(clicked()), this, SLOT(login()));
 
     // connect to server
@@ -56,52 +50,47 @@ LoginForm::~LoginForm()
 }
 
 
+void LoginForm::connectionChanged(QTcpSocket *socketServer, LoginProtocolController::ConnectionState connectionState)
+{
+    // successfull connect --> enable login
+    if(connectionState == LoginProtocolController::ConnectionState::Connected) {
+        this->ui->statusbar->showMessage("Successfull connected to Server... Ready for login");
+        this->ui->centralwidget->setDisabled(false);
+    }
+
+    // connection error --> inform user and try again
+    else if(connectionState == LoginProtocolController::ConnectionState::ConnectionError) {
+        this->ui->centralwidget->setDisabled(true);
+        this->ui->statusbar->showMessage(QString("Error \"%1\" occours, try again in 3 Seconds...").arg(socketServer->errorString()));
+
+        // try to establish the connection to the server after 3 seconds again
+        QTimer::singleShot(3000, this, SLOT(connectToServer()));
+    }
+
+    // disconnect --> reconnect
+    else if(connectionState == LoginProtocolController::ConnectionState::Disconnected) {
+        this->ui->statusbar->showMessage("Server disconnected, try reconnect again in 3 Seconds");
+        QTimer::singleShot(3000, this, SLOT(connectToServer()));
+    }
+}
+
+
 //
 // Server Connection Signal handling
 //
 
 void LoginForm::connectToServer()
 {
-     // don't connect to server if allready connected
+    // don't connect to server if allready connected
     if(Global::socketServer->state() == QTcpSocket::ConnectedState) {
         return this->ui->centralwidget->setDisabled(false);
     }
 
-    // connect to server, and inform the user about it
-    Global::socketServer->connectToHost(Global::strServerHostname, Global::intServerPort);
-    this->ui->statusbar->showMessage("Try to connect to Server...");
+    // prepare gui for connection
     this->ui->centralwidget->setDisabled(true);
-
-    // make a syncron connect
-    QEventLoop loop;
-    loop.connect(Global::socketServer, SIGNAL(error(QAbstractSocket::SocketError)), &loop, SLOT(quit()));
-    loop.connect(Global::socketServer, SIGNAL(connected()), &loop, SLOT(quit()));
-    loop.exec();
-
-    // if socket is connected, we have a successfull connect
-    if(Global::socketServer->state() == QTcpSocket::ConnectedState) {
-        // inform the user about the successfull connection and enable the window, so that the user can login!
-        this->ui->statusbar->showMessage("Successfull connected to Server... Ready for login");
-        this->ui->centralwidget->setDisabled(false);
-    }
-
-    // ...otherwise we have an connection error, so inform user and try again
-    else {
-        // inform the user about the error and not allow the user to login
-        this->ui->centralwidget->setDisabled(true);
-        this->ui->statusbar->showMessage(QString("Error \"%1\" occours, try again in 10 Seconds...").arg(Global::socketServer->errorString()));
-
-        // try to establish the connection to the server after 10 seconds again
-        QTimer::singleShot(10000, this, SLOT(connectToServer()));
-    }
+    this->ui->statusbar->showMessage("Try to connect to Server...");
+    this->controller.connectToServer();
 }
-
-void LoginForm::serverDisconnected()
-{
-    this->ui->statusbar->showMessage("Server disconnected, try reconnect again in 3 Seconds");
-    QTimer::singleShot(3000, this, SLOT(connectToServer()));
-}
-
 
 //
 // Style
@@ -135,28 +124,17 @@ bool LoginForm::loginValidator()
 
 void LoginForm::login()
 {
-    // disbale the login button, so that the user can't perform a login twice
+    // handle double clicks by user on login button!
+    if(!this->ui->pushButtonLogin->isEnabled()) {
+        return;
+    }
     this->ui->pushButtonLogin->setEnabled(false);
 
     // inform the user about the login process
     this->ui->statusbar->showMessage("Login...");
 
     // create login protobuf objects
-    Protocol::LoginRequest requestLogin;
-    requestLogin.set_username(this->ui->lineEditLogin->text().toStdString());
-    QByteArray baPasswordHash = QCryptographicHash::hash(this->ui->lineEditPassword->text().toUtf8(), QCryptographicHash::Sha1).toHex();
-    requestLogin.set_password(baPasswordHash.data());
-    requestLogin.set_sessionname(this->ui->lineEditSession->text().toStdString());
-
-    // ... and send constructed protobuf packet to the server
-    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_USER_LOGIN, requestLogin.SerializeAsString());
-
-    // wait for packet async and process it
-    EleaphRpcPacket epLoginResponse = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_USER_LOGIN);
-
-    // parse server response and handle it
-    Protocol::LoginResponse responseLogin;
-    responseLogin.ParseFromArray(epLoginResponse.data()->baRawPacketData->data(), epLoginResponse.data()->baRawPacketData->length());
+    Protocol::LoginResponse responseLogin = this->controller.login(this->ui->lineEditLogin->text(), this->ui->lineEditPassword->text(), this->ui->lineEditSession->text());
 
     // inform the user about login wasn't success, reset the password, and let the user login again :-)
     if(responseLogin.type() == Protocol::LoginResponse_Type_LoginIncorect) {
@@ -178,54 +156,20 @@ void LoginForm::login()
 
 void LoginForm::getNeededDataForMainForm()
 {
-    ///
-    /// get own user data
-    ///
-    // request own user data from server
+    // get own user (exit if error occours!)
     this->ui->statusbar->showMessage("Get Userdata...");
-    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_USER_SELF_GET_INFO);
-    EleaphRpcPacket epUserSelf = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_USER_SELF_GET_INFO);
-
-   // parse and handle own user data
-    Protocol::User *user = new Protocol::User;
-    if(!user->ParseFromArray(epUserSelf.data()->baRawPacketData->constData(), epUserSelf.data()->baRawPacketData->length())) {
-        qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
+    Protocol::User *user = this->controller.fetchOwnUserData();
+    if(!user) {
         return;
     }
-
-    // save user
     Global::user = user;
 
 
-    ///
-    /// get contact list
-    ///
-    // request contact list from server
+    // get contact list
     this->ui->statusbar->showMessage("Get Contactlist...");
-    Global::eleaphRpc->sendRPCDataPacket(Global::socketServer, PACKET_DESCRIPTOR_CONTACT_GET_LIST);
-    EleaphRpcPacket epContactList = Global::eleaphRpc->waitAsyncForPacket(PACKET_DESCRIPTOR_CONTACT_GET_LIST);
-
-    // if no contact list was given skip contact list handling
-    Global::mapContactList.clear();
-    if(epContactList.data()->baRawPacketData->length() > 0)  {
-        // parse and handle contact list
-        Protocol::ContactList contactList;
-        if(!contactList.ParseFromArray(epContactList.data()->baRawPacketData->constData(), epContactList.data()->baRawPacketData->length())) {
-            qWarning("[%s][%d] - Protocol Violation by Trying to Parse User", __PRETTY_FUNCTION__ , __LINE__);
-            return;
-        }
-
-        // save all contacts for global access
-
-        for(int i = 0; i < contactList.contact_size(); i++) {
-            Protocol::Contact* contact = new Protocol::Contact(contactList.contact(i));
-            Global::mapContactList.insert(contact->user().id(), contact);
-            Global::mapCachedUsers.insert(contact->user().id(), contact->mutable_user());
-        }
-    }
+    this->controller.fetchContactList();
 
     // jump to main form (and destroy login form!)
+    (new MainWindow)->show();
     this->deleteLater();
-    MainWindow *mw = new MainWindow;
-    mw->show();
 }

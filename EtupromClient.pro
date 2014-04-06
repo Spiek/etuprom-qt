@@ -23,14 +23,16 @@ SOURCES +=  client/src/main.cpp\
             client/src/loginform.cpp \
             client/src/global.cpp \
             client/src/chatbox.cpp \
-            client/src/designloader.cpp
+            client/src/designloader.cpp \
+    		client/src/loginprotocolcontroller.cpp
 
 # Headers (Client)
 HEADERS  += client/src/mainwindow.h  \
             client/src/loginform.h \
             client/src/global.h \
             client/src/chatbox.h \
-            client/src/designloader.h
+            client/src/designloader.h \
+    		client/src/loginprotocolcontroller.h
 
 
 # Sources (Protocol)

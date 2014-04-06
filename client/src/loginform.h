@@ -19,6 +19,7 @@
 #include "collective/proto/packettypes.h"
 
 // own (client)
+#include "loginprotocolcontroller.h"
 #include "global.h"
 
 // own (gui)
@@ -37,9 +38,12 @@ class LoginForm : public QMainWindow
         ~LoginForm();
 
     private:
+        LoginProtocolController controller;
         Ui::LoginForm *ui;
 
     private slots:
+        // slots
+
         // Gui
         void loadDesign(QString strDesign = "default");
         bool loginValidator();
@@ -48,7 +52,7 @@ class LoginForm : public QMainWindow
 
         // Socket slots
         void connectToServer();
-        void serverDisconnected();
+        void connectionChanged(QTcpSocket *socketServer, LoginProtocolController::ConnectionState connectionState);
 };
 
 #endif // LOGINFORM_H
